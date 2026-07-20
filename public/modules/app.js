@@ -3,7 +3,7 @@
 import { $, todayStr } from './util.js';
 import { S, R } from './ctx.js';
 import { toast } from './ui.js';
-import { hasSession, initLogin, showLogin, onSessionExpired, logout } from './auth.js';
+import { hasSession, initLogin, showLogin, onSessionExpired } from './auth.js';
 import { loadLocal, adoptRemote, save, flush } from './store.js';
 import * as checkin from './checkin.js';
 import * as planner from './planner.js';
@@ -27,8 +27,6 @@ function startApp() {
   started = true;
 
   $('appView').style.display = '';
-  $('foot').style.display = '';
-  $('logoutBtn').onclick = logout;
 
   planner.initRange();
   checkin.init();

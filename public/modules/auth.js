@@ -85,8 +85,3 @@ export function initLogin(onSuccess) {
     }
   };
 }
-
-export function logout() {
-  clearSession();
-  location.reload();
-}

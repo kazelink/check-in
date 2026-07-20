@@ -80,18 +80,18 @@ body {
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  min-height: 28px
+  min-height: 32px
 }
 
 .icn {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border: 0;
   background: 0 0;
   color: var(--t3);
-  font-size: 19px;
+  font-size: 20px;
   line-height: 1;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -111,11 +111,12 @@ body {
   background: var(--acc-t);
   color: var(--acc);
   font-size: 12px;
-  font-weight: 600;
-  padding: 5px 12px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  padding: 6px 14px;
   border-radius: 999px;
   cursor: pointer;
-  transition: .15s;
+  transition: all .2s ease;
   white-space: nowrap
 }
 
@@ -124,12 +125,18 @@ body {
 }
 
 .chip:active {
-  transform: scale(.95)
+  transform: scale(.96)
 }
 
 .chip.on {
-  background: var(--acc);
-  color: #fff
+  background: linear-gradient(135deg, var(--acc), #7d95f7);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(78, 110, 242, .25)
+}
+
+.chip.on:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 4px 10px rgba(78, 110, 242, .3)
 }
 
 /* 类型颜色：工作蓝 / 学习橙 / 运动红 / 生活绿 / 娱乐紫 */
@@ -217,16 +224,19 @@ body {
   height: 42px;
   border: 0;
   border-radius: 10px;
-  background: var(--acc);
+  background: linear-gradient(135deg, var(--acc), #7d95f7);
   color: #fff;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 2px;
   cursor: pointer;
-  transition: .15s
+  box-shadow: 0 2px 6px rgba(78, 110, 242, .25);
+  transition: all .2s ease
 }
 
 .auth-btn:hover {
-  filter: brightness(1.08)
+  filter: brightness(1.05);
+  box-shadow: 0 4px 10px rgba(78, 110, 242, .3)
 }
 
 .auth-btn:active {
@@ -243,28 +253,6 @@ body {
   color: var(--red);
   min-height: 16px;
   text-align: center
-}
-
-.foot {
-  margin-top: 18px;
-  font-size: 12px;
-  color: var(--t3)
-}
-
-.foot button {
-  border: 0;
-  background: 0 0;
-  color: var(--t3);
-  cursor: pointer;
-  font-size: 12px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  transition: .15s
-}
-
-.foot button:hover {
-  color: var(--red);
-  background: var(--red-t)
 }
 
 /* ---------- 日程计划 ---------- */
@@ -932,17 +920,19 @@ body {
   height: 34px;
   border: 0;
   border-radius: 10px;
-  background: var(--acc);
+  background: linear-gradient(135deg, var(--acc), #7d95f7);
   color: #fff;
-  font-size: 18px;
+  font-size: 15px;
   line-height: 1;
   cursor: pointer;
   flex-shrink: 0;
-  transition: .15s
+  box-shadow: 0 2px 6px rgba(78, 110, 242, .25);
+  transition: all .2s ease
 }
 
 .add-btn:hover {
-  filter: brightness(1.08)
+  filter: brightness(1.05);
+  box-shadow: 0 4px 10px rgba(78, 110, 242, .3)
 }
 
 .add-btn:active {
@@ -1045,8 +1035,13 @@ body {
   font-size: 13px;
   line-height: 1;
   cursor: pointer;
-  padding: 4px 5px;
-  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
   flex-shrink: 0;
   transition: .15s;
   opacity: 0
@@ -1067,7 +1062,8 @@ body {
   opacity: 1 !important;
   font-size: 12px;
   font-weight: 600;
-  padding: 4px 8px
+  width: auto;
+  padding: 0 9px
 }
 
 @media (hover:none) {
