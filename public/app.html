@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>CheckIn</title>
+  <meta name="theme-color" content="#f5f6f8">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
+  <link rel="stylesheet" href="/app.css">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@latest/lunar.js" defer></script>
+</head>
+
+<body>
+  <!-- 登录 -->
+  <div id="authView" class="auth-wrap" style="display:none">
+    <form id="authForm" class="auth-card">
+      <div class="auth-logo">📅</div>
+      <div class="auth-tit">CheckIn</div>
+      <input type="password" id="authInp" class="auth-inp" autocomplete="current-password">
+      <button type="submit" class="auth-btn" id="authBtn">进入</button>
+      <div class="auth-msg" id="authMsg"></div>
+    </form>
+  </div>
+
+  <!-- 主界面 -->
+  <div id="appView" class="grid" style="display:none">
+    <div class="card a-pl">
+      <div class="c-tit">
+        <div class="pl-nav">
+          <button type="button" class="icn" id="dPrev" title="前一天">‹</button>
+          <button type="button" class="icn" id="dNext" title="后一天">›</button>
+          <span class="pl-date" id="plDate">--</span>
+          <button type="button" class="chip" id="dToday" style="display:none">回到今天</button>
+        </div>
+        <div class="pl-act">
+          <span class="pl-range" id="plRangeSel" title="一天的时间范围" style="display:none">
+            <select id="rs"></select><span>–</span><select id="re"></select>
+          </span>
+          <button type="button" class="chip" id="modeBtn">编辑</button>
+        </div>
+      </div>
+
+      <div class="pl-view" id="plView"></div>
+
+      <div id="plEdit" style="display:none">
+        <div class="pl-hint" id="plHint" style="display:none"></div>
+        <div class="pl-wrap">
+          <div id="plRows"></div>
+          <div class="pl-ovl" id="plBlocks"></div>
+          <div class="pl-ovl" id="plMisc">
+            <div id="plGhost" class="ghost" style="display:none"></div>
+            <div id="nowLine" class="nowline" style="display:none"><i></i></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card a-cal">
+      <div class="c-tit">
+        <div class="cal-ctrl" id="cc">
+          <button type="button" class="icn" data-dir="-1" title="上个月">‹</button>
+          <button type="button" class="icn" data-dir="1" title="下个月">›</button>
+          <span class="cal-month" id="cm">--</span>
+        </div>
+        <button type="button" class="chip" id="calToday">今天</button>
+      </div>
+      <div class="c-grd" id="cg"></div>
+    </div>
+
+    <div class="card a-ci">
+      <div class="c-tit">
+        <span>打卡</span>
+        <span class="ci-sum">
+          <span class="pbar" id="pbar" style="display:none"><i id="pfill"></i></span>
+          <span class="ci-num" id="ciDone"></span>
+          <button type="button" class="icn" id="addTog" title="添加打卡事项">＋</button>
+        </span>
+      </div>
+      <form id="addForm" class="add-row" style="display:none">
+        <input type="text" id="addInp" class="add-inp" maxlength="40" autocomplete="off">
+        <button type="submit" class="add-btn" title="确定">✓</button>
+      </form>
+      <div class="ci-list" id="ciList"></div>
+    </div>
+
+    <div class="card a-st">
+      <div class="c-tit">
+        <span>本月统计</span>
+        <span class="ci-num" id="stTot"></span>
+      </div>
+      <div class="st-bar" id="stBar"></div>
+      <div id="stList"></div>
+    </div>
+  </div>
+
+  <footer class="foot" id="foot" style="display:none">
+    <button type="button" id="logoutBtn">退出登录</button>
+  </footer>
+
+  <div id="toast"></div>
+
+  <script type="module" src="/modules/app.js"></script>
+</body>
+
+</html>
