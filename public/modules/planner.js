@@ -111,10 +111,9 @@ function renderEdit() {
     const cs = Math.max(p.s, RS), ce = Math.min(p.e, RE);
     const top = (cs - RS) / 30 * SH, h = (ce - cs) / 30 * SH;
     const isArm = S.armed === 'p:' + p.id;
-    const showT = ce - cs >= 60;
     const timeTxt = `${fmtT(p.s)}–${fmtT(p.e)}` + (p.items.length > 1 ? ` · ${p.items.length}项` : '');
     const lines = p.items.map((x, j) =>
-      `<div class="blk-ln"><span class="${x.d ? 'dn' : ''}">${esc(x.n)}</span>${j === 0 && showT ? `<i>${timeTxt}</i>` : ''}</div>`).join('');
+      `<div class="blk-ln"><span class="${x.d ? 'dn' : ''}">${esc(x.n)}</span>${j === 0 ? `<i>${timeTxt}</i>` : ''}</div>`).join('');
     return `<div class="pl-blk ${tCls(p.t)}" data-pb="${p.id}" style="top:${top + 1}px;height:${h - 2}px"
       title="${fmtT(p.s)}–${fmtT(p.e)} ${esc(p.items.map((x) => x.n).join('、'))}">
       ${lines}

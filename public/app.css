@@ -518,9 +518,9 @@ body {
   top: 2px;
   right: 3px;
   border: 0;
-  background: var(--card);
+  background: var(--hov);
   cursor: pointer;
-  color: var(--bc);
+  color: var(--red);
   font-size: 12px;
   padding: 2px 5px;
   opacity: 0;
@@ -534,7 +534,8 @@ body {
 }
 
 .pl-bx:hover {
-  opacity: 1 !important
+  opacity: 1 !important;
+  background: var(--red-t)
 }
 
 .pl-bx.arm {
@@ -1030,8 +1031,8 @@ body {
 
 .ci-del {
   border: 0;
-  background: 0 0;
-  color: var(--t3);
+  background: var(--hov);
+  color: var(--red);
   font-size: 12px;
   line-height: 1;
   cursor: pointer;
@@ -1052,7 +1053,6 @@ body {
 }
 
 .ci-del:hover {
-  color: var(--red);
   background: var(--red-t)
 }
 
