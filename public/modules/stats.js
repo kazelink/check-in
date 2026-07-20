@@ -1,10 +1,17 @@
-// 本月统计：按已完成事项比例折算各类型时长
+// 月度统计：跟随日历当前显示的月份，按已完成事项比例折算各类型时长
 
-import { $, TYPES, todayStr, fmtH } from './util.js';
+import { $, TYPES, fmtH } from './util.js';
 import { S } from './ctx.js';
 
 export function render() {
-  const pre = todayStr().slice(0, 7);
+  const now = new Date();
+  const y = S.vD.getFullYear(), m = S.vD.getMonth();
+  const pre = `${y}-${String(m + 1).padStart(2, '0')}`;
+  const isCur = y === now.getFullYear() && m === now.getMonth();
+  $('stTit').textContent = isCur
+    ? '本月统计'
+    : (y !== now.getFullYear() ? `${y}年${m + 1}月统计` : `${m + 1}月统计`);
+
   const sums = {};
   for (const k in S.data.plans) {
     if (!k.startsWith(pre)) continue;
@@ -21,7 +28,7 @@ export function render() {
 
   if (!tot) {
     $('stBar').style.display = 'none';
-    $('stList').innerHTML = '<div class="empty">本月暂无已完成日程</div>';
+    $('stList').innerHTML = '<div class="empty">该月暂无已完成日程</div>';
     return;
   }
 
