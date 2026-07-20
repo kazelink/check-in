@@ -305,7 +305,7 @@ export function init() {
     const p = dayPlans().find((q) => q.id === pid);
     if (!p || !p.items[+idx]) return;
     p.items[+idx].d = p.items[+idx].d ? 0 : 1;
-    save(); renderView();
+    save(); renderView(); R.stats();   // 勾选完成即时反映到本月统计
   };
 
   // 点击编辑器以外的地方 → 提交（捕获阶段，先于其他处理）
