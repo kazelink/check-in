@@ -129,26 +129,40 @@ function ensureD1(dbName) {
   return { databaseName: db.name, databaseId: db.uuid };
 }
 
+// Insert missing fields into the [[block]] that declares our binding.
+// Line-based on purpose: existing keys anywhere in the block (before or after
+// the binding line) must be detected, otherwise we would duplicate them and
+// produce invalid TOML.
 function injectBindingFields(rawConfig, blockName, bindingName, extraLines) {
   if (!extraLines.length) return rawConfig;
 
-  const blockPattern = new RegExp(
-    `(\\[\\[${blockName}\\]\\]\\s*\\r?\\n(?:[^\\[]*?\\r?\\n)*?binding\\s*=\\s*"${bindingName}"\\s*\\r?\\n)`,
-    'm'
-  );
+  const lines = rawConfig.split(/\r?\n/);
+  const headerRe = new RegExp(`^\\s*\\[\\[${blockName}\\]\\]`);
+  const bindingRe = new RegExp(`^\\s*binding\\s*=\\s*"${bindingName}"`);
+  const tableRe = /^\s*\[/;
 
-  const match = rawConfig.match(blockPattern);
-  if (!match) return rawConfig;
+  for (let start = 0; start < lines.length; start++) {
+    if (!headerRe.test(lines[start])) continue;
 
-  const existingBlock = match[0];
-  const missingLines = extraLines.filter((line) => {
-    const key = line.split('=')[0].trim();
-    return !new RegExp(`^\\s*${key}\\s*=`, 'm').test(existingBlock);
-  });
+    let end = start + 1;
+    while (end < lines.length && !tableRe.test(lines[end])) end++;
 
-  if (!missingLines.length) return rawConfig;
+    const block = lines.slice(start, end);
+    if (!block.some((l) => bindingRe.test(l))) continue;
 
-  return rawConfig.replace(blockPattern, `${match[1]}${missingLines.join('\n')}\n`);
+    const missing = extraLines.filter((line) => {
+      const key = line.split('=')[0].trim();
+      const keyRe = new RegExp(`^\\s*${key}\\s*=`);
+      return !block.some((l) => keyRe.test(l));
+    });
+    if (!missing.length) return rawConfig;
+
+    const bindingIdx = start + block.findIndex((l) => bindingRe.test(l));
+    lines.splice(bindingIdx + 1, 0, ...missing);
+    return lines.join('\n');
+  }
+
+  return rawConfig;
 }
 
 function createResolvedConfig(rawConfig, d1) {
