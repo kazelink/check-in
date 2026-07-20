@@ -11,7 +11,8 @@ export const S = {
   justCk: null,        // 刚打卡的事项（打勾动画用）
   edit: null,          // 就地编辑器状态 { id|null, s, e, t }
   rz: null,            // 调整时间块大小的状态
-  selecting: false,    // 时间轴拖选中
+  selecting: false,    // 时间轴按住拖选中
+  picking: false,      // 已点击起点，等待第二次点击选择结束时间
   selA: null,
   selB: null,
   dragRect: null,      // 拖选/调整时缓存的时间轴位置

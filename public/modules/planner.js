@@ -44,7 +44,7 @@ export function renderPlan() {
 // 统计卡点击类型 → 进入/退出该类型的当月汇总
 export function setTypeView(k) {
   if (S.edit) commitEditor();
-  S.selecting = false; S.rz = null;
+  S.selecting = false; S.picking = false; S.selA = S.selB = null; S.rz = null;
   S.typeView = S.typeView === k ? null : k;
   renderPlan();
   R.stats();     // 刷新统计卡的选中高亮
@@ -132,13 +132,20 @@ function renderEdit() {
 
 function updGhost() {
   const g = $('plGhost');
-  if (!S.selecting || S.selA == null) { g.style.display = 'none'; return; }
+  if ((!S.selecting && !S.picking) || S.selA == null) { g.style.display = 'none'; return; }
   const RS = S.data.range.s * 60;
   const a = Math.min(S.selA, S.selB), b = Math.max(S.selA, S.selB);
   g.style.display = 'flex';
   g.style.top = a * SH + 1 + 'px';
   g.style.height = (b - a + 1) * SH - 2 + 'px';
   g.textContent = `${fmtT(RS + a * 30)} – ${fmtT(RS + (b + 1) * 30)}`;
+}
+
+// 取消“等待结束时间”的起点选择
+function cancelPick() {
+  S.picking = false;
+  S.selA = S.selB = null;
+  renderEdit();      // 恢复 ghost 与提示行
 }
 
 export function updNow() {
@@ -314,7 +321,7 @@ function startRz(id, edge, ev) {
 
 export function gotoDate(ds) {
   if (S.edit) commitEditor();
-  S.selecting = false; S.rz = null;
+  S.selecting = false; S.picking = false; S.selA = S.selB = null; S.rz = null;
   S.typeView = null;             // 选择具体日期即退出类型汇总
   S.selDate = ds;
   S.vD = parseDs(ds);
@@ -337,7 +344,7 @@ export function initRange() {
       S.data.range.e = S.data.range.s + 1;
       $('re').value = S.data.range.e;
     }
-    save(); S.selecting = false; S.rz = null; renderPlan();
+    save(); S.selecting = false; S.picking = false; S.selA = S.selB = null; S.rz = null; renderPlan();
   };
   $('rs').onchange = onCh;
   $('re').onchange = onCh;
@@ -357,20 +364,34 @@ export function init() {
     save(); renderView(); R.stats();   // 勾选完成即时反映到月度统计
   };
 
-  // 点击编辑器以外的地方 → 提交（捕获阶段，先于其他处理）
+  // 点击编辑器以外的地方 → 提交（捕获阶段，先于其他处理）；
+  // 已选起点时点击时间轴以外 → 取消起点
   document.addEventListener('pointerdown', (e) => {
     if (S.edit && !e.target.closest('#blkEd')) commitEditor();
+    if (S.picking && !e.target.closest('.pl-cell')) cancelPick();
   }, true);
 
-  // 时间轴空白处：拖选新建
+  // 时间轴空白处：第一次点击定起点，第二次点击定终点（按住拖选同样有效）
   $('plRows').onpointerdown = (e) => {
     const c = e.target.closest('.pl-cell');
     if (!c || !('i' in c.dataset)) return;
     const i = +c.dataset.i;
     if (S.occ.has(i)) return;
+    e.preventDefault();
+
+    if (S.picking) {               // 第二次点击：确定结束时间，打开编辑器
+      const RS = S.data.range.s * 60;
+      const z = clampTo(S.selA, i);
+      const a = Math.min(S.selA, z), b = Math.max(S.selA, z);
+      S.picking = false;
+      S.selA = S.selB = null;
+      updGhost();
+      openEditor(null, RS + a * 30, RS + (b + 1) * 30);
+      return;
+    }
+
     S.selecting = true; S.selA = S.selB = i;
     S.dragRect = $('plRows').getBoundingClientRect();
-    e.preventDefault();
     updGhost();
   };
 
@@ -402,7 +423,19 @@ export function init() {
   };
 
   document.addEventListener('pointermove', (e) => {
-    if (!S.selecting && !S.rz) return;
+    if (!S.selecting && !S.rz && !S.picking) return;
+
+    // 已选起点：鼠标移动实时预览起止范围（手机无悬停，保持起点格）
+    if (S.picking) {
+      const rect = $('plRows').getBoundingClientRect();
+      if (e.clientY < rect.top || e.clientY > rect.bottom) return;
+      const RS0 = S.data.range.s * 60, n0 = (S.data.range.e * 60 - RS0) / 30;
+      const idx0 = Math.max(0, Math.min(n0 - 1, Math.floor((e.clientY - rect.top) / SH)));
+      S.selB = clampTo(S.selA, idx0);
+      updGhost();
+      return;
+    }
+
     const RS = S.data.range.s * 60, RE = S.data.range.e * 60, n = (RE - RS) / 30;
     const idx = Math.max(0, Math.min(n - 1, Math.floor((e.clientY - S.dragRect.top) / SH)));
     if (S.selecting) {
@@ -427,6 +460,15 @@ export function init() {
     if (S.selecting) {
       S.selecting = false;
       const RS = S.data.range.s * 60;
+      if (S.selA === S.selB) {
+        // 未拖动：视为已选起点，等待第二次点击选择结束时间
+        S.picking = true;
+        S.dragRect = $('plRows').getBoundingClientRect();
+        $('plHint').textContent = `已选起点 ${fmtT(RS + S.selA * 30)}，再点击结束时间（Esc 取消）`;
+        $('plHint').style.display = '';
+        updGhost();
+        return;
+      }
       const a = Math.min(S.selA, S.selB), b = Math.max(S.selA, S.selB);
       S.selA = S.selB = null;
       updGhost();
@@ -450,6 +492,7 @@ export function init() {
     if (S.typeView) { setTypeView(S.typeView); return; }   // 退出类型汇总
     if (!S.editMode) return;
     if (S.edit) { commitEditor(); return; }
+    if (S.picking) { cancelPick(); return; }
     if (S.selecting) { S.selecting = false; S.selA = S.selB = null; updGhost(); }
   });
 
@@ -458,7 +501,7 @@ export function init() {
   $('modeBtn').onclick = () => {
     if (S.edit) commitEditor();
     S.editMode = !S.editMode;
-    S.selecting = false; S.rz = null;
+    S.selecting = false; S.picking = false; S.selA = S.selB = null; S.rz = null;
     renderPlan();
   };
 
