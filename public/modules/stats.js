@@ -1,7 +1,9 @@
-// 月度统计：跟随日历当前显示的月份，按已完成事项比例折算各类型时长
+// 月度统计：跟随日历当前显示的月份，按已完成事项比例折算各类型时长。
+// 点击柱条分段或图例行 → 左侧日程卡切换为该类型的当月汇总视图。
 
 import { $, TYPES, fmtH } from './util.js';
 import { S } from './ctx.js';
+import { setTypeView } from './planner.js';
 
 export function render() {
   const now = new Date();
@@ -32,14 +34,25 @@ export function render() {
     return;
   }
 
+  const sel = S.typeView;
   $('stBar').style.display = 'flex';
+  $('stBar').classList.toggle('filt', Boolean(sel));
   $('stBar').innerHTML = TYPES.filter((t) => sums[t.k]).map((t) =>
-    `<i class="${t.cls}" style="width:${sums[t.k] / tot * 100}%"></i>`).join('');
+    `<i class="${t.cls}${t.k === sel ? ' on' : ''}" data-t="${t.k}" title="${t.n}" style="width:${sums[t.k] / tot * 100}%"></i>`).join('');
   $('stList').innerHTML = TYPES.filter((t) => sums[t.k]).map((t) =>
-    `<div class="st-row ${t.cls}">
+    `<div class="st-row ${t.cls}${t.k === sel ? ' on' : ''}" data-t="${t.k}">
       <span class="st-dot"></span>
       <span class="st-n">${t.n}</span>
       <span class="st-h">${fmtH(sums[t.k])}</span>
       <span class="st-p">${Math.round(sums[t.k] / tot * 100)}%</span>
     </div>`).join('');
+}
+
+export function init() {
+  const onPick = (e) => {
+    const el = e.target.closest('[data-t]');
+    if (el) setTypeView(el.dataset.t);
+  };
+  $('stBar').onclick = onPick;
+  $('stList').onclick = onPick;
 }

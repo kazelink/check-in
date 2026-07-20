@@ -32,6 +32,7 @@ function startApp() {
   checkin.init();
   planner.init();
   calendar.init();
+  stats.init();
 
   R.items();
   R.cal();       // 内部会顺带刷新本月统计
@@ -53,7 +54,7 @@ function startApp() {
       return;
     }
     if (S.editMode) planner.updNow();
-    else if (S.data.plans[S.selDate]) R.view();
+    else if (!S.typeView && S.data.plans[S.selDate]) R.view();
   }, 30000);
 
   // 切到后台前尽量把未同步的数据推上去

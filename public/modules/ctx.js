@@ -6,6 +6,7 @@ export const S = {
   vD: new Date(),      // 日历显示的月份
   selDate: null,       // 正在查看/编辑的日期（app.js 初始化为今天）
   editMode: false,     // 日程卡片：展示 / 编辑
+  typeView: null,      // 类型汇总视图：显示日历当前月某类型的全部时段（类型 key 或 null）
   expandedId: null,    // 展开统计的打卡事项
   justCk: null,        // 刚打卡的事项（打勾动画用）
   edit: null,          // 就地编辑器状态 { id|null, s, e, t }

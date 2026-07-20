@@ -10,6 +10,26 @@ const dayPlans = () => S.data.plans[S.selDate] || [];
 /* ---------- 渲染 ---------- */
 
 export function renderPlan() {
+  const tv = S.typeView;
+  $('dPrev').style.display = tv ? 'none' : '';
+  $('dNext').style.display = tv ? 'none' : '';
+  $('tvBack').style.display = tv ? '' : 'none';
+  $('modeBtn').style.display = tv ? 'none' : '';
+
+  // 类型汇总视图：显示日历当前月该类型的全部时段
+  if (tv) {
+    const ty = TYPES.find((x) => x.k === tv);
+    const now = new Date();
+    const y = S.vD.getFullYear(), m = S.vD.getMonth();
+    $('plDate').textContent = `${y !== now.getFullYear() ? y + '年' : ''}${m + 1}月 · ${ty ? ty.n : ''}`;
+    $('dToday').style.display = 'none';
+    $('plRangeSel').style.display = 'none';
+    $('plEdit').style.display = 'none';
+    $('plView').style.display = '';
+    renderTypeView();
+    return;
+  }
+
   const t = todayStr();
   $('plDate').textContent = dispDate(S.selDate);
   $('dToday').style.display = S.selDate === t ? 'none' : '';
@@ -19,6 +39,32 @@ export function renderPlan() {
   $('plEdit').style.display = S.editMode ? '' : 'none';
   $('plView').style.display = S.editMode ? 'none' : '';
   if (S.editMode) renderEdit(); else renderView();
+}
+
+// 统计卡点击类型 → 进入/退出该类型的当月汇总
+export function setTypeView(k) {
+  if (S.edit) commitEditor();
+  S.selecting = false; S.rz = null;
+  S.typeView = S.typeView === k ? null : k;
+  renderPlan();
+  R.stats();     // 刷新统计卡的选中高亮
+}
+
+function renderTypeView() {
+  const pre = `${S.vD.getFullYear()}-${String(S.vD.getMonth() + 1).padStart(2, '0')}`;
+  const days = Object.keys(S.data.plans).filter((k) => k.startsWith(pre)).sort();
+  let html = '';
+  for (const ds of days) {
+    const ps = S.data.plans[ds].filter((p) => p.t === S.typeView).sort((a, b) => a.s - b.s);
+    if (!ps.length) continue;
+    html += `<div class="tv-date" data-jump="${ds}">${dispDate(ds, 1)}</div>`;
+    html += ps.map((p) => `<div class="pv-it ${tCls(p.t)}" data-jump="${ds}" title="点击查看当天日程">
+        <span class="pv-t">${fmtT(p.s)} – ${fmtT(p.e)}</span>
+        <div class="pv-ns">${p.items.map((x) =>
+      `<div class="pv-n${x.d ? ' done' : ''}"><i class="pv-ck">${x.d ? '✓' : ''}</i><span>${esc(x.n)}</span></div>`).join('')}</div>
+      </div>`).join('');
+  }
+  $('plView').innerHTML = html || '<div class="empty">该月暂无此类型日程</div>';
 }
 
 // 展示模式：当天日程清单，点击事项标记完成
@@ -269,6 +315,7 @@ function startRz(id, edge, ev) {
 export function gotoDate(ds) {
   if (S.edit) commitEditor();
   S.selecting = false; S.rz = null;
+  S.typeView = null;             // 选择具体日期即退出类型汇总
   S.selDate = ds;
   S.vD = parseDs(ds);
   R.cal(); renderPlan();
@@ -297,15 +344,17 @@ export function initRange() {
 }
 
 export function init() {
-  // 展示模式：点击事项 → 标记完成/取消
+  // 展示模式：点击事项标记完成；类型汇总视图：点击跳到对应日期
   $('plView').onclick = (e) => {
+    const j = e.target.closest('[data-jump]');
+    if (j) { gotoDate(j.dataset.jump); return; }
     const n = e.target.closest('[data-tg]');
     if (!n) return;
     const [pid, idx] = n.dataset.tg.split(':');
     const p = dayPlans().find((q) => q.id === pid);
     if (!p || !p.items[+idx]) return;
     p.items[+idx].d = p.items[+idx].d ? 0 : 1;
-    save(); renderView(); R.stats();   // 勾选完成即时反映到本月统计
+    save(); renderView(); R.stats();   // 勾选完成即时反映到月度统计
   };
 
   // 点击编辑器以外的地方 → 提交（捕获阶段，先于其他处理）
@@ -397,10 +446,14 @@ export function init() {
   });
 
   document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape' || !S.editMode) return;
+    if (e.key !== 'Escape') return;
+    if (S.typeView) { setTypeView(S.typeView); return; }   // 退出类型汇总
+    if (!S.editMode) return;
     if (S.edit) { commitEditor(); return; }
     if (S.selecting) { S.selecting = false; S.selA = S.selB = null; updGhost(); }
   });
+
+  $('tvBack').onclick = () => setTypeView(S.typeView);
 
   $('modeBtn').onclick = () => {
     if (S.edit) commitEditor();

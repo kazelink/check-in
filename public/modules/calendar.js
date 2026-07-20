@@ -71,6 +71,7 @@ export function init() {
     if (dir) {
       S.vD.setMonth(S.vD.getMonth() + parseInt(dir));
       render();
+      if (S.typeView) R.plan();   // 类型汇总视图跟随翻月
     }
   };
   $('calToday').onclick = () => gotoDate(todayStr());

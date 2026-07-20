@@ -1104,7 +1104,7 @@ body {
   line-height: 1.9
 }
 
-/* ---------- 本月统计 ---------- */
+/* ---------- 月度统计 ---------- */
 .a-st {
   grid-area: stats
 }
@@ -1121,7 +1121,13 @@ body {
 .st-bar i {
   display: block;
   height: 100%;
-  background: var(--bc)
+  background: var(--bc);
+  cursor: pointer;
+  transition: opacity .15s
+}
+
+.st-bar.filt i:not(.on) {
+  opacity: .3
 }
 
 .st-row {
@@ -1129,8 +1135,42 @@ body {
   align-items: center;
   gap: 9px;
   font-size: 13px;
-  padding: 4px 0;
-  color: var(--t2)
+  padding: 4px 7px;
+  color: var(--t2);
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background .15s
+}
+
+.st-row:hover {
+  background: var(--hov)
+}
+
+.st-row.on {
+  background: var(--bt)
+}
+
+.st-row.on .st-n {
+  color: var(--bc);
+  font-weight: 700
+}
+
+/* 类型汇总视图的日期分组标题 */
+.tv-date {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--t2);
+  margin: 10px 2px 5px;
+  cursor: pointer;
+  transition: color .15s
+}
+
+.tv-date:first-child {
+  margin-top: 2px
+}
+
+.tv-date:hover {
+  color: var(--acc)
 }
 
 .st-dot {
