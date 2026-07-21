@@ -117,6 +117,10 @@ textarea {
   color: var(--t1)
 }
 
+.icn.sm {
+  font-size: 13px
+}
+
 .chip {
   border: 0;
   background: var(--acc-t);
@@ -400,7 +404,6 @@ textarea {
 }
 
 .pv-n.done span {
-  text-decoration: line-through;
   color: var(--t3)
 }
 
@@ -511,7 +514,6 @@ textarea {
 }
 
 .blk-ln .dn {
-  text-decoration: line-through;
   opacity: .55
 }
 

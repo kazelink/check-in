@@ -76,6 +76,7 @@ export function render() {
 function toggleAdd(show) {
   $('addForm').style.display = show ? '' : 'none';
   $('addTog').textContent = show ? '✕' : '＋';
+  $('addTog').classList.toggle('sm', show);
   if (show) $('addInp').focus();
   else $('addInp').value = '';
 }
