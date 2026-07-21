@@ -3,6 +3,12 @@ import { S } from './ctx.js';
 import { swalConfirm } from './ui.js';
 import { save } from './store.js';
 
+const LONG_PRESS_MS = 360;
+const DRAG_CANCEL_PX = 8;
+
+let sortDrag = null;
+let suppressClickUntil = 0;
+
 function streak(id) {
   let n = 0, d = new Date();
   d = new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -63,7 +69,8 @@ export function render() {
           : '<div class="ci-rec">暂无打卡记录</div>'}
       </div>`;
     }
-    return `<div class="ci-item${open ? ' open' : ''}" data-it="${it.id}">
+    const sorting = sortDrag?.active && sortDrag.id === it.id;
+    return `<div class="ci-item${open ? ' open' : ''}${sorting ? ' sorting' : ''}" data-it="${it.id}">
       <div class="ci-row">
         <button type="button" class="ck${dt ? ' on' : ''}${it.id === S.justCk ? ' pop' : ''}" data-ck="${it.id}"
           title="${dt ? '已打卡 ' + dt + '，点击取消' : '打卡'}">${dt ? '✓' : ''}</button>
@@ -79,6 +86,44 @@ function toggleAdd(show) {
   $('addTog').classList.toggle('sm', show);
   if (show) $('addInp').focus();
   else $('addInp').value = '';
+}
+
+function moveFixedItem(id, targetId) {
+  if (!id || !targetId || id === targetId) return false;
+  const arr = S.data.fixed;
+  const from = arr.findIndex((i) => i.id === id);
+  const to = arr.findIndex((i) => i.id === targetId);
+  if (from < 0 || to < 0 || from === to) return false;
+  const [item] = arr.splice(from, 1);
+  arr.splice(to, 0, item);
+  return true;
+}
+
+function clearSortTimer() {
+  if (sortDrag?.timer) clearTimeout(sortDrag.timer);
+}
+
+function activateSort(pointerId) {
+  if (!sortDrag || sortDrag.pointerId !== pointerId) return;
+  sortDrag.active = true;
+  sortDrag.changed = false;
+  suppressClickUntil = Date.now() + 600;
+  $('ciList').classList.add('sorting');
+  render();
+}
+
+function finishSort() {
+  if (!sortDrag) return;
+  const wasActive = sortDrag.active;
+  const changed = sortDrag.changed;
+  clearSortTimer();
+  sortDrag = null;
+  $('ciList').classList.remove('sorting');
+  if (wasActive) {
+    suppressClickUntil = Date.now() + 600;
+    if (changed) save();
+    render();
+  }
 }
 
 export function init() {
@@ -97,7 +142,58 @@ export function init() {
     if (e.key === 'Escape') toggleAdd(false);
   });
 
+  $('ciList').addEventListener('pointerdown', (e) => {
+    if (e.button && e.button !== 0) return;
+    if (e.target.closest('[data-ck],[data-del]')) return;
+    const item = e.target.closest('.ci-item');
+    if (!item) return;
+
+    clearSortTimer();
+    sortDrag = {
+      id: item.dataset.it,
+      pointerId: e.pointerId,
+      x: e.clientX,
+      y: e.clientY,
+      active: false,
+      changed: false,
+      timer: setTimeout(() => activateSort(e.pointerId), LONG_PRESS_MS)
+    };
+  });
+
+  document.addEventListener('pointermove', (e) => {
+    if (!sortDrag || sortDrag.pointerId !== e.pointerId) return;
+    const moved = Math.abs(e.clientX - sortDrag.x) + Math.abs(e.clientY - sortDrag.y);
+    if (!sortDrag.active && moved > DRAG_CANCEL_PX) {
+      finishSort();
+      return;
+    }
+    if (!sortDrag.active) return;
+
+    e.preventDefault();
+    const target = document.elementFromPoint(e.clientX, e.clientY)?.closest('.ci-item');
+    if (!target) return;
+    if (moveFixedItem(sortDrag.id, target.dataset.it)) {
+      sortDrag.changed = true;
+      render();
+      $('ciList').classList.add('sorting');
+    }
+  });
+
+  document.addEventListener('pointerup', (e) => {
+    if (sortDrag && sortDrag.pointerId === e.pointerId) finishSort();
+  });
+
+  document.addEventListener('pointercancel', (e) => {
+    if (sortDrag && sortDrag.pointerId === e.pointerId) finishSort();
+  });
+
   $('ciList').onclick = (e) => {
+    if (Date.now() < suppressClickUntil) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
     const ck = e.target.closest('[data-ck]');
     const del = e.target.closest('[data-del]');
     if (ck) {

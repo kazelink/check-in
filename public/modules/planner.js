@@ -6,6 +6,11 @@ import { save } from './store.js';
 const dayPlans = () => S.data.plans[S.selDate] || [];
 
 let blkTap = null;   // 块上的按下点：抬起未位移才算点按打开，滑动滚屏不误触
+let lineSort = null;
+let lineSortSuppressUntil = 0;
+
+const LINE_SORT_LONG_PRESS_MS = 360;
+const LINE_SORT_CANCEL_PX = 8;
 
 export function renderPlan() {
   const tv = S.typeView;
@@ -289,6 +294,23 @@ function buildEditor(items) {
   });
 
   d.addEventListener('pointerdown', (ev) => {
+    if (ev.button && ev.button !== 0) return;
+    const inp = ev.target.closest('.be-i');
+    if (!inp || !inp.value.trim()) return;
+
+    clearLineSortTimer();
+    lineSort = {
+      inp,
+      pointerId: ev.pointerId,
+      x: ev.clientX,
+      y: ev.clientY,
+      active: false,
+      changed: false,
+      timer: setTimeout(() => activateLineSort(ev.pointerId), LINE_SORT_LONG_PRESS_MS)
+    };
+  });
+
+  d.addEventListener('pointerdown', (ev) => {
     const dot = ev.target.closest('.be-dot');
     if (!dot) return;
     ev.preventDefault();
@@ -298,6 +320,11 @@ function buildEditor(items) {
   });
 
   d.addEventListener('click', (ev) => {
+    if (Date.now() < lineSortSuppressUntil) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      return;
+    }
     if (ev.target.closest('.be-save')) { saveEditor(); return; }
     if (ev.target === d || ev.target.classList.contains('be-lines')) {
       const ins = d.querySelectorAll('.be-i');
@@ -315,6 +342,64 @@ function addLine(v = '', foc) {
   inp.value = v;
   $('blkEd').querySelector('.be-lines').appendChild(inp);
   if (foc) inp.focus();
+}
+
+function clearLineSortTimer() {
+  if (lineSort?.timer) clearTimeout(lineSort.timer);
+}
+
+function activateLineSort(pointerId) {
+  if (!lineSort || lineSort.pointerId !== pointerId || !document.body.contains(lineSort.inp)) return;
+  lineSort.active = true;
+  lineSort.changed = false;
+  lineSortSuppressUntil = Date.now() + 600;
+  lineSort.inp.classList.add('sorting');
+  $('blkEd')?.classList.add('sorting');
+  lineSort.inp.blur();
+}
+
+function moveEditorLine(target) {
+  const lines = $('blkEd')?.querySelector('.be-lines');
+  if (!lines || !lineSort?.inp || !target || lineSort.inp === target) return false;
+
+  const inputs = [...lines.querySelectorAll('.be-i')];
+  const from = inputs.indexOf(lineSort.inp);
+  const to = inputs.indexOf(target);
+  if (from < 0 || to < 0 || from === to) return false;
+
+  const targetIsBlank = !target.value.trim();
+  const ref = from < to && !targetIsBlank ? target.nextSibling : target;
+  lines.insertBefore(lineSort.inp, ref);
+  lineSort.changed = true;
+  return true;
+}
+
+function finishLineSort() {
+  if (!lineSort) return;
+  const wasActive = lineSort.active;
+  clearLineSortTimer();
+  lineSort.inp.classList.remove('sorting');
+  $('blkEd')?.classList.remove('sorting');
+  if (wasActive) {
+    lineSortSuppressUntil = Date.now() + 600;
+    lineSort.inp.focus({ preventScroll: true });
+  }
+  lineSort = null;
+}
+
+function handleLineSortMove(e) {
+  if (!lineSort || lineSort.pointerId !== e.pointerId) return false;
+  const moved = Math.abs(e.clientX - lineSort.x) + Math.abs(e.clientY - lineSort.y);
+  if (!lineSort.active && moved > LINE_SORT_CANCEL_PX) {
+    finishLineSort();
+    return false;
+  }
+  if (!lineSort.active) return false;
+
+  e.preventDefault();
+  const target = document.elementFromPoint(e.clientX, e.clientY)?.closest('.be-i');
+  if (target && target.closest('#blkEd')) moveEditorLine(target);
+  return true;
 }
 
 function commitEditor() {
@@ -474,6 +559,7 @@ export function init() {
   };
 
   document.addEventListener('pointermove', (e) => {
+    if (handleLineSortMove(e)) return;
     if (blkTap && Math.abs(e.clientX - blkTap.x) + Math.abs(e.clientY - blkTap.y) > 10) blkTap = null;
     if (!S.selecting && !S.rz && !S.picking) return;
 
@@ -507,7 +593,12 @@ export function init() {
     }
   });
 
-  document.addEventListener('pointerup', () => {
+  document.addEventListener('pointerup', (e) => {
+    if (lineSort && lineSort.pointerId === e.pointerId) {
+      const wasActive = lineSort.active;
+      finishLineSort();
+      if (wasActive) return;
+    }
     if (blkTap) {
       const p = dayPlans().find((q) => q.id === blkTap.id);
       blkTap = null;
@@ -536,7 +627,8 @@ export function init() {
     }
   });
 
-  document.addEventListener('pointercancel', () => {
+  document.addEventListener('pointercancel', (e) => {
+    if (lineSort && lineSort.pointerId === e.pointerId) finishLineSort();
     blkTap = null;
     if (S.selecting) { S.selecting = false; S.selA = S.selB = null; updGhost(); }
     if (S.rz) { S.rz = null; $('plGhost').style.display = 'none'; renderEdit(); }

@@ -562,6 +562,12 @@ textarea {
   background: var(--red-t)
 }
 
+@media (hover:none), (pointer:coarse) {
+  .pl-bx {
+    opacity: .9
+  }
+}
+
 .rz {
   position: absolute;
   left: 0;
@@ -746,6 +752,16 @@ textarea {
 
 .be-i:last-child:focus {
   border-bottom-color: var(--bc)
+}
+
+.blk-ed.sorting .be-i {
+  cursor: grabbing
+}
+
+.be-i.sorting {
+  background: var(--bt);
+  border-radius: 6px;
+  opacity: .75
 }
 
 /* ---------- 日历 ---------- */
@@ -989,6 +1005,15 @@ textarea {
 
 .ci-item:last-child {
   border-bottom: 0
+}
+
+.ci-list.sorting .ci-item {
+  transition: background .15s, opacity .15s
+}
+
+.ci-item.sorting {
+  background: var(--hov);
+  opacity: .72
 }
 
 .ci-row {
