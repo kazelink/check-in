@@ -121,6 +121,11 @@ textarea {
   font-size: 13px
 }
 
+.icn.on {
+  color: var(--acc);
+  background: var(--acc-t)
+}
+
 .icn.spin {
   animation: spin .8s linear infinite;
   pointer-events: none

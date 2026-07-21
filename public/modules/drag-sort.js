@@ -1,9 +1,7 @@
-const LONG_PRESS_MS = 360;
-const DRAG_CANCEL_PX = 8;
-const SUPPRESS_MS = 600;
-
 export const isCoarsePointer = () =>
   window.matchMedia?.('(hover: none), (pointer: coarse)').matches;
+
+const SUPPRESS_MS = 600;
 
 export function bindDragSort({
   root,
@@ -19,7 +17,6 @@ export function bindDragSort({
   let drag = null;
   let suppressUntil = 0;
   const el = () => typeof root === 'function' ? root() : root;
-  const clear = () => { if (drag?.timer) clearTimeout(drag.timer); };
   const suppress = () => { suppressUntil = Date.now() + SUPPRESS_MS; };
 
   const activate = (pointerId) => {
@@ -33,7 +30,6 @@ export function bindDragSort({
   const finish = () => {
     if (!drag) return;
     const { active, changed } = drag;
-    clear();
     drag = null;
     el().classList.remove(sortingClass);
     if (!active) return;
@@ -45,29 +41,25 @@ export function bindDragSort({
   el().addEventListener('pointerdown', (e) => {
     if (e.button && e.button !== 0) return;
     const handleEl = e.target.closest(handle);
+    if (!handleEl) return;
     if (ignore && e.target.closest(ignore)) return;
-    if (isCoarsePointer() && !handleEl) return;
     const itemEl = e.target.closest(item);
     if (!itemEl) return;
-    if (handleEl) e.preventDefault();
+    e.preventDefault();
 
-    clear();
     drag = {
       id: idOf(itemEl),
       pointerId: e.pointerId,
       x: e.clientX,
       y: e.clientY,
       active: false,
-      changed: false,
-      timer: handleEl ? null : setTimeout(() => activate(e.pointerId), LONG_PRESS_MS)
+      changed: false
     };
-    if (handleEl) activate(e.pointerId);
+    activate(e.pointerId);
   });
 
   document.addEventListener('pointermove', (e) => {
     if (!drag || drag.pointerId !== e.pointerId) return;
-    const moved = Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y);
-    if (!drag.active && moved > DRAG_CANCEL_PX) { finish(); return; }
     if (!drag.active) return;
 
     e.preventDefault();

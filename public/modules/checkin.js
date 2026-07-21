@@ -5,6 +5,7 @@ import { save } from './store.js';
 import { bindDragSort } from './drag-sort.js';
 
 let sorter = null;
+let reorderMode = false;
 
 function streak(id) {
   let n = 0, d = new Date();
@@ -31,6 +32,8 @@ function rateOf(id) {
 
 export function render() {
   const t = todayStr(), box = $('ciList'), N = S.data.fixed.length;
+  box.classList.toggle('reorder-mode', reorderMode && N > 1);
+  $('reorderTog').classList.toggle('on', reorderMode);
   const done = S.data.fixed.filter((i) => (S.data.recs[t] || {})[i.id]).length;
   $('ciDone').textContent = N ? `${done}/${N}` : '';
   $('pbar').style.display = N ? '' : 'none';
@@ -71,7 +74,7 @@ export function render() {
       <div class="ci-row">
         <button type="button" class="ck${dt ? ' on' : ''}${it.id === S.justCk ? ' pop' : ''}" data-ck="${it.id}"
           title="${dt ? '已打卡 ' + dt + '，点击取消' : '打卡'}">${dt ? '✓' : ''}</button>
-        <button type="button" class="ci-drag" data-sort-handle title="拖动排序" aria-label="拖动排序">☰</button>
+        ${reorderMode ? '<button type="button" class="ci-drag" data-sort-handle title="拖动排序" aria-label="拖动排序">☰</button>' : ''}
         <span class="ci-main"><span class="ci-name" title="${esc(it.name)}">${esc(it.name)}</span><span class="ci-brief">连续 ${streak(it.id)} 天 · 累计 ${totalCk(it.id)} 次</span></span>
         <button type="button" class="ci-del" data-del="${it.id}" title="删除">✕</button>
       </div>${detail}</div>`;
@@ -112,6 +115,11 @@ export function init() {
   $('addInp').addEventListener('keydown', (e) => {
     if (e.key === 'Escape') toggleAdd(false);
   });
+
+  $('reorderTog').onclick = () => {
+    reorderMode = !reorderMode;
+    render();
+  };
 
   sorter = bindDragSort({
     root: $('ciList'),
