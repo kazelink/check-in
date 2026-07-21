@@ -236,7 +236,7 @@ function buildEditor(items) {
   d.innerHTML = `<div class="be-head">
       <span class="be-time">
         <select class="be-ts" data-be="s">${opts(RS, RE - 30, Math.max(RS, Math.min(S.edit.s, RE - 30)))}</select>
-        <i>${ICONS.arrow}</i>
+        <i>${ICONS.dash}</i>
         <select class="be-ts" data-be="e">${opts(RS + 30, RE, Math.min(RE, Math.max(S.edit.e, RS + 30)))}</select>
       </span>
       <span class="be-r">
