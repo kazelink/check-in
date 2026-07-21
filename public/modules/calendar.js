@@ -1,5 +1,3 @@
-// 日历：月视图、农历/节假日、选择日期
-
 import { $, fmt, todayStr } from './util.js';
 import { S, R } from './ctx.js';
 import { gotoDate } from './planner.js';

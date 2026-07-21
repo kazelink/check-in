@@ -22,7 +22,8 @@
 }
 
 html {
-  scrollbar-gutter: stable
+  scrollbar-gutter: stable;
+  overscroll-behavior-y: none
 }
 
 button {
@@ -48,7 +49,8 @@ body {
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   -webkit-user-select: none;
-  -webkit-touch-callout: none
+  -webkit-touch-callout: none;
+  overscroll-behavior-y: none
 }
 
 input,
@@ -440,7 +442,7 @@ textarea {
   flex: 1;
   border-top: 1px solid var(--line2);
   cursor: pointer;
-  touch-action: pan-y;
+  touch-action: none;   /* 时间轴上滑动=选段；页面滚动走左侧时间刻度列或其他区域 */
   border-radius: 4px;
   transition: background .1s
 }

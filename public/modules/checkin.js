@@ -1,5 +1,3 @@
-// 打卡：事项管理、每日打卡、点击展开统计
-
 import { $, DAY, fmt, todayStr, parseDs, esc, genId, dispDate } from './util.js';
 import { S } from './ctx.js';
 import { swalConfirm } from './ui.js';
@@ -19,7 +17,7 @@ function totalCk(id) {
   return n;
 }
 
-// 完成率：从第一次打卡那天到今天，打卡天数占比
+// 完成率 = 打卡天数 / 首次打卡至今天数
 function rateOf(id) {
   const ds = Object.keys(S.data.recs).filter((k) => S.data.recs[k][id]).sort();
   if (!ds.length) return null;
@@ -90,7 +88,7 @@ export function init() {
     S.data.fixed.push({ id: genId('i'), name: v });
     $('addInp').value = '';
     save(); render();
-    $('addInp').focus();          // 保持输入状态，方便连续添加
+    $('addInp').focus();
   };
 
   $('addTog').onclick = () => toggleAdd($('addForm').style.display === 'none');

@@ -1,5 +1,3 @@
-// 日程计划：展示清单 / 时间轴编辑（拖选新建、就地编辑器、边缘拖拽调时间）
-
 import { $, SH, TYPES, tCls, fmt, todayStr, parseDs, esc, fmtT, genId, dispDate } from './util.js';
 import { S, R } from './ctx.js';
 import { toast, swalConfirm, swalUnsaved } from './ui.js';
@@ -7,7 +5,7 @@ import { save } from './store.js';
 
 const dayPlans = () => S.data.plans[S.selDate] || [];
 
-/* ---------- 渲染 ---------- */
+let blkTap = null;   // 块上的按下点：抬起未位移才算点按打开，滑动滚屏不误触
 
 export function renderPlan() {
   const tv = S.typeView;
@@ -16,7 +14,6 @@ export function renderPlan() {
   $('tvBack').style.display = tv ? '' : 'none';
   $('modeBtn').style.display = tv ? 'none' : '';
 
-  // 类型汇总视图：显示日历当前月该类型的全部时段
   if (tv) {
     const ty = TYPES.find((x) => x.k === tv);
     const now = new Date();
@@ -41,13 +38,12 @@ export function renderPlan() {
   if (S.editMode) renderEdit(); else renderView();
 }
 
-// 统计卡点击类型 → 进入/退出该类型的当月汇总
 export function setTypeView(k) {
   if (S.edit) commitEditor();
   S.selecting = false; S.picking = false; S.selA = S.selB = null; S.rz = null;
   S.typeView = S.typeView === k ? null : k;
   renderPlan();
-  R.stats();     // 刷新统计卡的选中高亮
+  R.stats();
 }
 
 function renderTypeView() {
@@ -67,7 +63,6 @@ function renderTypeView() {
   $('plView').innerHTML = html || '<div class="empty">该月暂无此类型日程</div>';
 }
 
-// 展示模式：当天日程清单，点击事项标记完成
 export function renderView() {
   const all = dayPlans().slice().sort((a, b) => a.s - b.s);
   if (!all.length) {
@@ -87,7 +82,6 @@ export function renderView() {
   }).join('');
 }
 
-// 编辑模式：时间轴
 function renderEdit() {
   const RS = S.data.range.s * 60, RE = S.data.range.e * 60, n = (RE - RS) / 30;
   const all = dayPlans().slice().sort((a, b) => a.s - b.s);
@@ -139,7 +133,6 @@ function updGhost() {
   g.textContent = `${fmtT(RS + a * 30)} – ${fmtT(RS + (b + 1) * 30)}`;
 }
 
-// 取消“等待结束时间”的起点选择
 function cancelPick() {
   S.picking = false;
   S.selA = S.selB = null;
@@ -158,7 +151,6 @@ export function updNow() {
   el.style.top = (min - RS) / 30 * SH + 'px';
 }
 
-// 从 a 向 b 延伸选择，遇到已占用格子截断
 function clampTo(a, b) {
   const step = b >= a ? 1 : -1;
   let last = a;
@@ -169,16 +161,13 @@ function clampTo(a, b) {
   return last;
 }
 
-/* ---------- 就地编辑器 ---------- */
-
 function openEditor(p, s, e) {
   if (S.edit) commitEditor();
   S.edit = p
     ? { id: p.id, s: p.s, e: p.e, t: p.t }
     : { id: null, s, e, t: S.data.lastT || 'w' };
-  // 记录打开时的快照，用于判断是否有未保存修改
   S.edit.orig = JSON.stringify({ s: S.edit.s, e: S.edit.e, t: S.edit.t, items: p ? p.items.map((x) => x.n) : [] });
-  renderPlan();               // 隐藏被编辑的块
+  renderPlan();
   buildEditor(p ? p.items : []);
 }
 
@@ -192,7 +181,6 @@ function isEditorDirty() {
   return JSON.stringify({ s: S.edit.s, e: S.edit.e, t: S.edit.t, items: editorTexts() }) !== S.edit.orig;
 }
 
-// 放弃本次编辑（不写入数据）
 function discardEditor() {
   S.edit = null;
   const el = $('blkEd');
@@ -200,17 +188,15 @@ function discardEditor() {
   renderEdit();
 }
 
-// 保存并提示；未改动则静默关闭
 function saveEditor() {
   const dirty = isEditorDirty();
   commitEditor();
   if (dirty) toast('已保存');
 }
 
-// 即将离开编辑器：有改动先询问（保存 / 不保存 / 继续编辑）
 function settleEditor() {
   if (!isEditorDirty()) { commitEditor(); return; }
-  if (settleEditor._busy) return;          // 对话框已打开，防止重复弹出
+  if (settleEditor._busy) return;
   settleEditor._busy = true;
   swalUnsaved().then((r) => {
     settleEditor._busy = false;
@@ -248,7 +234,6 @@ function buildEditor(items) {
   items.forEach((v) => addLine(v.n));
   addLine('', true);
 
-  // 调整时间：原生下拉，手机上唤起系统选择器
   d.addEventListener('change', (ev) => {
     const sel = ev.target.closest('.be-ts');
     if (!sel) return;
@@ -268,7 +253,6 @@ function buildEditor(items) {
     d.style.minHeight = Math.max(0, (Math.min(en, RE) - Math.max(s, RS)) / 30 * SH - 2) + 'px';
   });
 
-  // 回车连续录入；空行回车提交；空行退格删行
   d.addEventListener('keydown', (ev) => {
     if (ev.key === 'Enter') {
       ev.preventDefault();
@@ -286,6 +270,12 @@ function buildEditor(items) {
         ev.target.remove();
         ins[i - 1].focus();
       }
+    } else if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+      const ins = [...d.querySelectorAll('.be-i')];
+      const i = ins.indexOf(ev.target);
+      if (i < 0) return;
+      const j = ev.key === 'ArrowDown' ? i + 1 : i - 1;
+      if (ins[j]) { ev.preventDefault(); ins[j].focus(); }
     }
   });
 
@@ -299,7 +289,11 @@ function buildEditor(items) {
   });
 
   d.addEventListener('click', (ev) => {
-    if (ev.target.closest('.be-save')) saveEditor();
+    if (ev.target.closest('.be-save')) { saveEditor(); return; }
+    if (ev.target === d || ev.target.classList.contains('be-lines')) {
+      const ins = d.querySelectorAll('.be-i');
+      if (ins.length) ins[ins.length - 1].focus();
+    }
   });
 }
 
@@ -347,8 +341,6 @@ function commitEditor() {
   save(); renderEdit(); R.cal();
 }
 
-/* ---------- 调整时间块大小 ---------- */
-
 function startRz(id, edge, ev) {
   const RS = S.data.range.s * 60, RE = S.data.range.e * 60;
   const p = dayPlans().find((q) => q.id === id);
@@ -361,18 +353,14 @@ function startRz(id, edge, ev) {
   ev.preventDefault();
 }
 
-/* ---------- 模式与日期 ---------- */
-
 export function gotoDate(ds) {
   if (S.edit) commitEditor();
   S.selecting = false; S.picking = false; S.selA = S.selB = null; S.rz = null;
-  S.typeView = null;             // 选择具体日期即退出类型汇总
+  S.typeView = null;
   S.selDate = ds;
   S.vD = parseDs(ds);
   R.cal(); renderPlan();
 }
-
-/* ---------- 初始化 ---------- */
 
 export function initRange() {
   let o1 = '', o2 = '';
@@ -395,7 +383,6 @@ export function initRange() {
 }
 
 export function init() {
-  // 展示模式：点击事项标记完成；类型汇总视图：点击跳到对应日期
   $('plView').onclick = (e) => {
     const j = e.target.closest('[data-jump]');
     if (j) { gotoDate(j.dataset.jump); return; }
@@ -405,15 +392,12 @@ export function init() {
     const p = dayPlans().find((q) => q.id === pid);
     if (!p || !p.items[+idx]) return;
     p.items[+idx].d = p.items[+idx].d ? 0 : 1;
-    save(); renderView(); R.stats();   // 勾选完成即时反映到月度统计
+    save(); renderView(); R.stats();
   };
 
-  // 点击编辑器以外的地方（捕获阶段，先于其他处理）：
-  // 无改动 → 静默关闭；有未保存修改 → 拦截本次点击并询问
-  // 已选起点时点击时间轴与日程块以外 → 取消起点
+  // 捕获阶段：编辑器外点击先结算（脏则询问并拦截本次点击；点 ✕ 删除例外，不动编辑器）
   document.addEventListener('pointerdown', (e) => {
-    if (e.target.closest('.swal2-container')) return;   // 对话框内的点击不拦截
-    // 点删除 ✕ 时不动当前编辑器：可以在编辑中直接删除别的时间段
+    if (e.target.closest('.swal2-container')) return;
     if (S.edit && !e.target.closest('#blkEd') && !e.target.closest('[data-px]')) {
       if (isEditorDirty()) {
         e.preventDefault();
@@ -426,16 +410,16 @@ export function init() {
     if (S.picking && !e.target.closest('.pl-cell') && !e.target.closest('#plBlocks')) cancelPick();
   }, true);
 
-  // 时间轴空白处：第一次点击定起点，第二次点击定终点（按住拖选同样有效）
+  // 空白时间轴：按下即开始选段（滑动实时扩展），原地抬起转为两击模式等待终点
   $('plRows').onpointerdown = (e) => {
-    if (S.selecting || S.rz) return;   // 拖选/调整进行中（如多点触控）不重入
+    if (S.selecting || S.rz) return;
     const c = e.target.closest('.pl-cell');
     if (!c || !('i' in c.dataset)) return;
     const i = +c.dataset.i;
     if (S.occ.has(i)) return;
     e.preventDefault();
 
-    if (S.picking) {               // 第二次点击：确定结束时间，打开编辑器
+    if (S.picking) {
       const RS = S.data.range.s * 60;
       const z = clampTo(S.selA, i);
       const a = Math.min(S.selA, z), b = Math.max(S.selA, z);
@@ -451,7 +435,6 @@ export function init() {
     updGhost();
   };
 
-  // 时间块：删除 ✕ 任何状态下都可用；其余交互在选段时不响应，避免误触
   $('plBlocks').onpointerdown = (e) => {
     const x = e.target.closest('[data-px]');
     if (x) {
@@ -477,15 +460,14 @@ export function init() {
     const b = e.target.closest('[data-pb]');
     if (b) {
       e.preventDefault();
-      const p = dayPlans().find((q) => q.id === b.dataset.pb);
-      if (p) openEditor(p);
+      blkTap = { id: b.dataset.pb, x: e.clientX, y: e.clientY };
     }
   };
 
   document.addEventListener('pointermove', (e) => {
+    if (blkTap && Math.abs(e.clientX - blkTap.x) + Math.abs(e.clientY - blkTap.y) > 10) blkTap = null;
     if (!S.selecting && !S.rz && !S.picking) return;
 
-    // 已选起点：鼠标移动实时预览起止范围（手机无悬停，保持起点格）
     if (S.picking) {
       const rect = $('plRows').getBoundingClientRect();
       if (e.clientY < rect.top || e.clientY > rect.bottom) return;
@@ -517,11 +499,16 @@ export function init() {
   });
 
   document.addEventListener('pointerup', () => {
+    if (blkTap) {
+      const p = dayPlans().find((q) => q.id === blkTap.id);
+      blkTap = null;
+      if (p) openEditor(p);
+      return;
+    }
     if (S.selecting) {
       S.selecting = false;
       const RS = S.data.range.s * 60;
       if (S.selA === S.selB) {
-        // 未拖动：视为已选起点，等待第二次点击选择结束时间
         S.picking = true;
         S.dragRect = $('plRows').getBoundingClientRect();
         updGhost();
@@ -541,13 +528,14 @@ export function init() {
   });
 
   document.addEventListener('pointercancel', () => {
+    blkTap = null;
     if (S.selecting) { S.selecting = false; S.selA = S.selB = null; updGhost(); }
     if (S.rz) { S.rz = null; $('plGhost').style.display = 'none'; renderEdit(); }
   });
 
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
-    if (S.typeView) { setTypeView(S.typeView); return; }   // 退出类型汇总
+    if (S.typeView) { setTypeView(S.typeView); return; }
     if (!S.editMode) return;
     if (S.edit) { settleEditor(); return; }
     if (S.picking) { cancelPick(); return; }

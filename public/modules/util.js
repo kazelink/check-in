@@ -1,9 +1,7 @@
-// 通用常量与纯函数工具
-
 export const $ = (id) => document.getElementById(id);
 
 export const DAY = 86400000;
-export const SH = 20; // 时间轴每 30 分钟一格的高度（与 CSS .pl-row 同步）
+export const SH = 20; // 与 CSS .pl-row 高度一致
 export const WD = ['日', '一', '二', '三', '四', '五', '六'];
 
 export const TYPES = [

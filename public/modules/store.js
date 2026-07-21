@@ -1,5 +1,4 @@
-// 数据仓库：localStorage 即时缓存 + 服务端（D1）防抖同步。
-// 服务端是主数据源；断网时回退本地缓存，恢复后自动补同步。
+// 本地缓存立即写入 + 云端（D1）防抖同步，服务端为主数据源
 
 import { S } from './ctx.js';
 import { authedFetch, hasSession } from './auth.js';
@@ -12,7 +11,6 @@ export function emptyState() {
   return { fixed: [], recs: {}, plans: {}, range: { s: 7, e: 23 }, lastT: 'w' };
 }
 
-// 把任意历史版本的数据归一化成当前结构（含单文件旧版的迁移）
 export function normalize(d) {
   if (!d || typeof d !== 'object') return emptyState();
 
@@ -30,7 +28,7 @@ export function normalize(d) {
     if (arr.length) plans[k] = arr;
   }
 
-  // 时间范围兜底：损坏数据（如 e <= s）会让时间轴渲染不出任何格子
+  // 兜底非法 range（e <= s 会让时间轴渲染不出格子）
   const r = d.range || {};
   const s = Number.isInteger(r.s) ? Math.min(23, Math.max(0, r.s)) : 7;
   const e = Number.isInteger(r.e) ? Math.min(24, Math.max(s + 1, r.e)) : 23;
@@ -61,13 +59,12 @@ export function loadLocal() {
 export function saveLocal() {
   try {
     localStorage.setItem(KEY, JSON.stringify(S.data));
-  } catch { /* 隐私模式等场景下写入失败不致命 */ }
+  } catch { }
 }
 
 let dirty = false;
 let syncTimer = null;
 
-// 所有数据变更统一走这里：先落本地，再防抖同步到服务端
 export function save() {
   saveLocal();
   if (!hasSession()) return;
@@ -90,11 +87,10 @@ export async function flush() {
       if (res.status !== 401) toast('同步失败，已本地保存');
     }
   } catch {
-    dirty = true; // 断网：保持脏标记，由定时器/可见性变化重试
+    dirty = true;
   }
 }
 
-// 读取服务端状态；401 抛 { unauth: true }，网络错误抛原错误
 export async function fetchRemote() {
   const res = await authedFetch('/api/state');
   if (res.status === 401) throw { unauth: true };
@@ -103,7 +99,7 @@ export async function fetchRemote() {
   return json.state;
 }
 
-// 启动/重新登录时对齐服务端：远端有数据用远端，远端为空则把本地迁移上去
+// 远端有数据用远端；远端为空且本地有数据则把本地迁移上去
 export async function adoptRemote() {
   const remote = await fetchRemote();
   if (remote) {

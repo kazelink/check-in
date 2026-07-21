@@ -1,6 +1,3 @@
-// 月度统计：跟随日历当前显示的月份，按已完成事项比例折算各类型时长。
-// 点击柱条分段或图例行 → 左侧日程卡切换为该类型的当月汇总视图。
-
 import { $, TYPES, fmtH } from './util.js';
 import { S } from './ctx.js';
 import { setTypeView } from './planner.js';
@@ -20,7 +17,7 @@ export function render() {
     S.data.plans[k].forEach((p) => {
       const done = p.items.filter((x) => x.d).length;
       if (!done) return;
-      // 只统计已完成事项：按完成比例折算该时段时长
+      // 按已完成比例折算时长
       sums[p.t] = (sums[p.t] || 0) + (p.e - p.s) * done / p.items.length;
     });
   }

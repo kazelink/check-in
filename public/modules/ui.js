@@ -8,7 +8,7 @@ export function toast(m) {
   toast._t = setTimeout(() => t.classList.remove('show'), 1800);
 }
 
-// SweetAlert2 通常已由 app.html 的 defer <script> 加载，这里的懒加载只是兜底
+// 兜底加载（正常由 app.html 预载）
 function ensureSwal() {
   if (typeof Swal !== 'undefined') return Promise.resolve();
   return new Promise((resolve, reject) => {
@@ -22,7 +22,6 @@ function ensureSwal() {
 
 const BASE = { scrollbarPadding: false, heightAuto: false };
 
-// 删除确认，返回 boolean
 export async function swalConfirm(title, text) {
   try {
     await ensureSwal();
@@ -43,7 +42,7 @@ export async function swalConfirm(title, text) {
   }
 }
 
-// 未保存修改的三选一：'save' | 'discard' | 'cancel'
+// 返回 'save' | 'discard' | 'cancel'
 export async function swalUnsaved() {
   try {
     await ensureSwal();

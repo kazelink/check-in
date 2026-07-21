@@ -16,7 +16,7 @@ export function onSessionExpired(cb) {
   expiredCb = cb;
 }
 
-// 带认证头的 fetch；遇到 401 自动清理会话并通知上层弹出登录
+// 401 时清会话并通知上层重新登录
 export async function authedFetch(url, opts = {}) {
   const headers = new Headers(opts.headers || {});
   headers.set('X-Auth-Token', localStorage.getItem(TOKEN_KEY) || '');
