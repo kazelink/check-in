@@ -739,26 +739,61 @@ textarea {
   padding: 4px 1px;
   outline: 0;
   color: var(--t1);
-  width: 100%
+  width: 100%;
+  flex: 1;
+  min-width: 0
 }
 
 .be-i:focus {
   border-bottom: 1px solid var(--bc)
 }
 
-.be-i:last-child {
+.be-line:last-child .be-i {
   border-bottom-color: transparent
 }
 
-.be-i:last-child:focus {
+.be-line:last-child .be-i:focus {
   border-bottom-color: var(--bc)
 }
 
-.blk-ed.sorting .be-i {
+.be-lines {
+  display: flex;
+  flex-direction: column
+}
+
+.be-line {
+  display: flex;
+  align-items: center;
+  gap: 7px
+}
+
+.be-drag,
+.ci-drag {
+  border: 0;
+  background: 0 0;
+  color: var(--t3);
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none
+}
+
+.be-drag {
+  width: 18px;
+  height: 26px;
+  font-size: 13px
+}
+
+.blk-ed.sorting .be-line {
   cursor: grabbing
 }
 
-.be-i.sorting {
+.be-line:has(.be-i.sorting) {
   background: var(--bt);
   border-radius: 6px;
   opacity: .75
@@ -1022,6 +1057,20 @@ textarea {
   gap: 10px;
   padding: 9px 2px;
   cursor: pointer
+}
+
+.ci-drag {
+  width: 22px;
+  height: 26px;
+  font-size: 14px;
+  margin-left: -4px
+}
+
+.ci-list.sorting .ci-drag,
+.ci-drag:active,
+.be-drag:active {
+  cursor: grabbing;
+  color: var(--acc)
 }
 
 .ck {

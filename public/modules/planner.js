@@ -281,7 +281,7 @@ function buildEditor(items) {
       const i = ins.indexOf(ev.target);
       if (i > 0 && ev.target.value === '') {
         ev.preventDefault();
-        ev.target.remove();
+        ev.target.closest('.be-line')?.remove();
         ins[i - 1].focus();
       }
     } else if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
@@ -295,8 +295,13 @@ function buildEditor(items) {
 
   d.addEventListener('pointerdown', (ev) => {
     if (ev.button && ev.button !== 0) return;
-    const inp = ev.target.closest('.be-i');
+    const handle = ev.target.closest('[data-line-sort]');
+    if (isCoarsePointer() && !handle) return;
+    const inp = handle
+      ? handle.closest('.be-line')?.querySelector('.be-i')
+      : ev.target.closest('.be-i');
     if (!inp || !inp.value.trim()) return;
+    if (handle) ev.preventDefault();
 
     clearLineSortTimer();
     lineSort = {
@@ -306,8 +311,9 @@ function buildEditor(items) {
       y: ev.clientY,
       active: false,
       changed: false,
-      timer: setTimeout(() => activateLineSort(ev.pointerId), LINE_SORT_LONG_PRESS_MS)
+      timer: handle ? null : setTimeout(() => activateLineSort(ev.pointerId), LINE_SORT_LONG_PRESS_MS)
     };
+    if (handle) activateLineSort(ev.pointerId);
   });
 
   d.addEventListener('pointerdown', (ev) => {
@@ -334,13 +340,24 @@ function buildEditor(items) {
 }
 
 function addLine(v = '', foc) {
+  const row = document.createElement('div');
+  row.className = 'be-line';
+  const handle = document.createElement('button');
+  handle.type = 'button';
+  handle.className = 'be-drag';
+  handle.dataset.lineSort = '1';
+  handle.title = '拖动排序';
+  handle.setAttribute('aria-label', '拖动排序');
+  handle.textContent = '☰';
   const inp = document.createElement('input');
   inp.type = 'text';
   inp.className = 'be-i';
   inp.maxLength = 60;
   inp.autocomplete = 'off';
   inp.value = v;
-  $('blkEd').querySelector('.be-lines').appendChild(inp);
+  row.appendChild(handle);
+  row.appendChild(inp);
+  $('blkEd').querySelector('.be-lines').appendChild(row);
   if (foc) inp.focus();
 }
 
@@ -362,14 +379,18 @@ function moveEditorLine(target) {
   const lines = $('blkEd')?.querySelector('.be-lines');
   if (!lines || !lineSort?.inp || !target || lineSort.inp === target) return false;
 
-  const inputs = [...lines.querySelectorAll('.be-i')];
-  const from = inputs.indexOf(lineSort.inp);
-  const to = inputs.indexOf(target);
+  const row = lineSort.inp.closest('.be-line');
+  const targetRow = target.closest('.be-line');
+  if (!row || !targetRow || row === targetRow) return false;
+
+  const rows = [...lines.querySelectorAll('.be-line')];
+  const from = rows.indexOf(row);
+  const to = rows.indexOf(targetRow);
   if (from < 0 || to < 0 || from === to) return false;
 
   const targetIsBlank = !target.value.trim();
-  const ref = from < to && !targetIsBlank ? target.nextSibling : target;
-  lines.insertBefore(lineSort.inp, ref);
+  const ref = from < to && !targetIsBlank ? targetRow.nextSibling : targetRow;
+  lines.insertBefore(row, ref);
   lineSort.changed = true;
   return true;
 }
@@ -382,9 +403,13 @@ function finishLineSort() {
   $('blkEd')?.classList.remove('sorting');
   if (wasActive) {
     lineSortSuppressUntil = Date.now() + 600;
-    lineSort.inp.focus({ preventScroll: true });
+    if (!isCoarsePointer()) lineSort.inp.focus({ preventScroll: true });
   }
   lineSort = null;
+}
+
+function isCoarsePointer() {
+  return window.matchMedia?.('(hover: none), (pointer: coarse)').matches;
 }
 
 function handleLineSortMove(e) {
@@ -397,7 +422,8 @@ function handleLineSortMove(e) {
   if (!lineSort.active) return false;
 
   e.preventDefault();
-  const target = document.elementFromPoint(e.clientX, e.clientY)?.closest('.be-i');
+  const hit = document.elementFromPoint(e.clientX, e.clientY);
+  const target = hit?.closest('.be-i') || hit?.closest('.be-line')?.querySelector('.be-i');
   if (target && target.closest('#blkEd')) moveEditorLine(target);
   return true;
 }

@@ -74,6 +74,7 @@ export function render() {
       <div class="ci-row">
         <button type="button" class="ck${dt ? ' on' : ''}${it.id === S.justCk ? ' pop' : ''}" data-ck="${it.id}"
           title="${dt ? '已打卡 ' + dt + '，点击取消' : '打卡'}">${dt ? '✓' : ''}</button>
+        <button type="button" class="ci-drag" data-sort-handle title="拖动排序" aria-label="拖动排序">☰</button>
         <span class="ci-main"><span class="ci-name" title="${esc(it.name)}">${esc(it.name)}</span><span class="ci-brief">连续 ${streak(it.id)} 天 · 累计 ${totalCk(it.id)} 次</span></span>
         <button type="button" class="ci-del" data-del="${it.id}" title="删除">✕</button>
       </div>${detail}</div>`;
@@ -126,6 +127,10 @@ function finishSort() {
   }
 }
 
+function isCoarsePointer() {
+  return window.matchMedia?.('(hover: none), (pointer: coarse)').matches;
+}
+
 export function init() {
   $('addForm').onsubmit = (e) => {
     e.preventDefault();
@@ -144,9 +149,12 @@ export function init() {
 
   $('ciList').addEventListener('pointerdown', (e) => {
     if (e.button && e.button !== 0) return;
+    const handle = e.target.closest('[data-sort-handle]');
     if (e.target.closest('[data-ck],[data-del]')) return;
+    if (isCoarsePointer() && !handle) return;
     const item = e.target.closest('.ci-item');
     if (!item) return;
+    if (handle) e.preventDefault();
 
     clearSortTimer();
     sortDrag = {
@@ -156,8 +164,9 @@ export function init() {
       y: e.clientY,
       active: false,
       changed: false,
-      timer: setTimeout(() => activateSort(e.pointerId), LONG_PRESS_MS)
+      timer: handle ? null : setTimeout(() => activateSort(e.pointerId), LONG_PRESS_MS)
     };
+    if (handle) activateSort(e.pointerId);
   });
 
   document.addEventListener('pointermove', (e) => {
