@@ -20,6 +20,9 @@ R.stats = stats.render;
 S.selDate = todayStr();
 S.data = loadLocal();
 
+// App 化：禁用右键菜单（文字选择已由 CSS user-select 关闭）
+document.addEventListener('contextmenu', (e) => e.preventDefault());
+
 let started = false;
 
 function startApp() {

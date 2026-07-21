@@ -2,7 +2,7 @@
 
 import { $, SH, TYPES, tCls, fmt, todayStr, parseDs, esc, fmtT, genId, dispDate } from './util.js';
 import { S, R } from './ctx.js';
-import { toast, arm } from './ui.js';
+import { toast, swalConfirm, swalUnsaved } from './ui.js';
 import { save } from './store.js';
 
 const dayPlans = () => S.data.plans[S.selDate] || [];
@@ -110,14 +110,13 @@ function renderEdit() {
   $('plBlocks').innerHTML = vis.map((p) => {
     const cs = Math.max(p.s, RS), ce = Math.min(p.e, RE);
     const top = (cs - RS) / 30 * SH, h = (ce - cs) / 30 * SH;
-    const isArm = S.armed === 'p:' + p.id;
     const timeTxt = `${fmtT(p.s)}–${fmtT(p.e)}` + (p.items.length > 1 ? ` · ${p.items.length}项` : '');
     const lines = p.items.map((x, j) =>
       `<div class="blk-ln"><span class="${x.d ? 'dn' : ''}">${esc(x.n)}</span>${j === 0 ? `<i>${timeTxt}</i>` : ''}</div>`).join('');
     return `<div class="pl-blk ${tCls(p.t)}" data-pb="${p.id}" style="top:${top + 1}px;height:${h - 2}px"
       title="${fmtT(p.s)}–${fmtT(p.e)} ${esc(p.items.map((x) => x.n).join('、'))}">
       ${lines}
-      <button type="button" class="pl-bx${isArm ? ' arm' : ''}" data-px="${p.id}" title="删除">${isArm ? '确认' : '✕'}</button>
+      <button type="button" class="pl-bx" data-px="${p.id}" title="删除">✕</button>
       <div class="rz rz-t"></div><div class="rz rz-b"></div>
     </div>`;
   }).join('');
@@ -177,8 +176,47 @@ function openEditor(p, s, e) {
   S.edit = p
     ? { id: p.id, s: p.s, e: p.e, t: p.t }
     : { id: null, s, e, t: S.data.lastT || 'w' };
+  // 记录打开时的快照，用于判断是否有未保存修改
+  S.edit.orig = JSON.stringify({ s: S.edit.s, e: S.edit.e, t: S.edit.t, items: p ? p.items.map((x) => x.n) : [] });
   renderPlan();               // 隐藏被编辑的块
   buildEditor(p ? p.items : []);
+}
+
+function editorTexts() {
+  const el = $('blkEd');
+  return el ? [...el.querySelectorAll('.be-i')].map((i) => i.value.trim()).filter(Boolean) : [];
+}
+
+function isEditorDirty() {
+  if (!S.edit) return false;
+  return JSON.stringify({ s: S.edit.s, e: S.edit.e, t: S.edit.t, items: editorTexts() }) !== S.edit.orig;
+}
+
+// 放弃本次编辑（不写入数据）
+function discardEditor() {
+  S.edit = null;
+  const el = $('blkEd');
+  if (el) el.remove();
+  renderEdit();
+}
+
+// 保存并提示；未改动则静默关闭
+function saveEditor() {
+  const dirty = isEditorDirty();
+  commitEditor();
+  if (dirty) toast('已保存');
+}
+
+// 即将离开编辑器：有改动先询问（保存 / 不保存 / 继续编辑）
+function settleEditor() {
+  if (!isEditorDirty()) { commitEditor(); return; }
+  if (settleEditor._busy) return;          // 对话框已打开，防止重复弹出
+  settleEditor._busy = true;
+  swalUnsaved().then((r) => {
+    settleEditor._busy = false;
+    if (r === 'save') saveEditor();
+    else if (r === 'discard') discardEditor();
+  });
 }
 
 function buildEditor(items) {
@@ -200,8 +238,11 @@ function buildEditor(items) {
         <i>–</i>
         <select class="be-ts" data-be="e">${opts(RS + 30, RE, Math.min(RE, Math.max(S.edit.e, RS + 30)))}</select>
       </span>
-      <span class="be-types">${TYPES.map((t) =>
+      <span class="be-r">
+        <span class="be-types">${TYPES.map((t) =>
     `<button type="button" class="be-dot ${t.cls}" data-t="${t.k}" title="${t.n}">${t.k === S.edit.t ? '✓' : ''}</button>`).join('')}</span>
+        <button type="button" class="be-save">保存</button>
+      </span>
     </div><div class="be-lines"></div>`;
   $('plMisc').appendChild(d);
   items.forEach((v) => addLine(v.n));
@@ -234,7 +275,7 @@ function buildEditor(items) {
       const ins = [...d.querySelectorAll('.be-i')];
       const i = ins.indexOf(ev.target);
       if (i < 0) return;
-      if (!ev.target.value.trim() && i === ins.length - 1) { commitEditor(); return; }
+      if (!ev.target.value.trim() && i === ins.length - 1) { saveEditor(); return; }
       if (i === ins.length - 1) addLine('', true);
       else ins[i + 1].focus();
     } else if (ev.key === 'Backspace') {
@@ -256,6 +297,10 @@ function buildEditor(items) {
     d.className = 'blk-ed ' + tCls(S.edit.t);
     d.querySelectorAll('.be-dot').forEach((x) => x.textContent = x.dataset.t === S.edit.t ? '✓' : '');
   });
+
+  d.addEventListener('click', (ev) => {
+    if (ev.target.closest('.be-save')) saveEditor();
+  });
 }
 
 function addLine(v = '', foc) {
@@ -272,7 +317,7 @@ function addLine(v = '', foc) {
 function commitEditor() {
   if (!S.edit) return;
   const el = $('blkEd');
-  const texts = el ? [...el.querySelectorAll('.be-i')].map((i) => i.value.trim()).filter(Boolean) : [];
+  const texts = editorTexts();
   const arr = dayPlans();
   if (S.edit.id) {
     const p = arr.find((q) => q.id === S.edit.id);
@@ -363,11 +408,21 @@ export function init() {
     save(); renderView(); R.stats();   // 勾选完成即时反映到月度统计
   };
 
-  // 点击编辑器以外的地方 → 提交（捕获阶段，先于其他处理）；
-  // 已选起点时点击时间轴以外 → 取消起点
+  // 点击编辑器以外的地方（捕获阶段，先于其他处理）：
+  // 无改动 → 静默关闭；有未保存修改 → 拦截本次点击并询问
+  // 已选起点时点击时间轴与日程块以外 → 取消起点
   document.addEventListener('pointerdown', (e) => {
-    if (S.edit && !e.target.closest('#blkEd')) commitEditor();
-    if (S.picking && !e.target.closest('.pl-cell')) cancelPick();
+    if (e.target.closest('.swal2-container')) return;   // 对话框内的点击不拦截
+    if (S.edit && !e.target.closest('#blkEd')) {
+      if (isEditorDirty()) {
+        e.preventDefault();
+        e.stopPropagation();
+        settleEditor();
+        return;
+      }
+      commitEditor();
+    }
+    if (S.picking && !e.target.closest('.pl-cell') && !e.target.closest('#plBlocks')) cancelPick();
   }, true);
 
   // 时间轴空白处：第一次点击定起点，第二次点击定终点（按住拖选同样有效）
@@ -394,8 +449,9 @@ export function init() {
     updGhost();
   };
 
-  // 时间块：调整边缘 / 删除 / 就地编辑
+  // 时间块：调整边缘 / 删除 / 就地编辑（正在选择时间段时不响应，避免误触）
   $('plBlocks').onpointerdown = (e) => {
+    if (S.picking) return;
     const h = e.target.closest('.rz');
     if (h) {
       const blk = h.closest('[data-pb]');
@@ -406,7 +462,10 @@ export function init() {
     if (x) {
       e.preventDefault();
       const id = x.dataset.px;
-      arm('p:' + id, () => {
+      const p = dayPlans().find((q) => q.id === id);
+      if (!p) return;
+      swalConfirm('删除这条日程？', `${fmtT(p.s)}–${fmtT(p.e)} ${p.items.map((q) => q.n).join('、')}`).then((ok) => {
+        if (!ok) return;
         S.data.plans[S.selDate] = dayPlans().filter((q) => q.id !== id);
         if (!S.data.plans[S.selDate].length) delete S.data.plans[S.selDate];
         save(); renderEdit(); R.cal();
@@ -490,7 +549,7 @@ export function init() {
     if (e.key !== 'Escape') return;
     if (S.typeView) { setTypeView(S.typeView); return; }   // 退出类型汇总
     if (!S.editMode) return;
-    if (S.edit) { commitEditor(); return; }
+    if (S.edit) { settleEditor(); return; }
     if (S.picking) { cancelPick(); return; }
     if (S.selecting) { S.selecting = false; S.selA = S.selB = null; updGhost(); }
   });

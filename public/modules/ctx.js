@@ -16,8 +16,7 @@ export const S = {
   selA: null,
   selB: null,
   dragRect: null,      // 拖选/调整时缓存的时间轴位置
-  occ: new Set(),      // 当前视图中被日程占用的格子
-  armed: null          // 两步删除确认的目标
+  occ: new Set()       // 当前视图中被日程占用的格子
 };
 
 export const R = {

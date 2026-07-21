@@ -2,7 +2,7 @@
 
 import { $, DAY, fmt, todayStr, parseDs, esc, genId, dispDate } from './util.js';
 import { S } from './ctx.js';
-import { arm } from './ui.js';
+import { swalConfirm } from './ui.js';
 import { save } from './store.js';
 
 function streak(id) {
@@ -47,7 +47,6 @@ export function render() {
   box.innerHTML = S.data.fixed.map((it) => {
     const dt = (S.data.recs[t] || {})[it.id];
     const open = S.expandedId === it.id;
-    const isArm = S.armed === 'i:' + it.id;
     const rate = rateOf(it.id);
     let detail = '';
     if (open) {
@@ -71,7 +70,7 @@ export function render() {
         <button type="button" class="ck${dt ? ' on' : ''}${it.id === S.justCk ? ' pop' : ''}" data-ck="${it.id}"
           title="${dt ? '已打卡 ' + dt + '，点击取消' : '打卡'}">${dt ? '✓' : ''}</button>
         <span class="ci-name" title="${esc(it.name)}">${esc(it.name)}</span>
-        <button type="button" class="ci-del${isArm ? ' arm' : ''}" data-del="${it.id}" title="删除">${isArm ? '确认' : '✕'}</button>
+        <button type="button" class="ci-del" data-del="${it.id}" title="删除">✕</button>
       </div>${detail}</div>`;
   }).join('');
 }
@@ -116,7 +115,10 @@ export function init() {
       save(); render(); S.justCk = null;
     } else if (del) {
       const id = del.dataset.del;
-      arm('i:' + id, () => {
+      const it = S.data.fixed.find((i) => i.id === id);
+      if (!it) return;
+      swalConfirm(`删除「${it.name}」？`, '其全部打卡记录将一并删除').then((ok) => {
+        if (!ok) return;
         S.data.fixed = S.data.fixed.filter((i) => i.id !== id);
         for (const k in S.data.recs) {
           delete S.data.recs[k][id];
