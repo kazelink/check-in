@@ -32,7 +32,7 @@ export async function authedFetch(url, opts = {}) {
 
 export function showLogin(msg) {
   $('authView').style.display = 'flex';
-  $('authMsg').textContent = msg || '';
+  if (msg !== undefined) $('authMsg').textContent = msg;   // 不传参则保留已有提示
   requestAnimationFrame(() => $('authInp').focus({ preventScroll: true }));
 }
 

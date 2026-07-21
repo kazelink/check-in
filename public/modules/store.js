@@ -30,11 +30,16 @@ export function normalize(d) {
     if (arr.length) plans[k] = arr;
   }
 
+  // 时间范围兜底：损坏数据（如 e <= s）会让时间轴渲染不出任何格子
+  const r = d.range || {};
+  const s = Number.isInteger(r.s) ? Math.min(23, Math.max(0, r.s)) : 7;
+  const e = Number.isInteger(r.e) ? Math.min(24, Math.max(s + 1, r.e)) : 23;
+
   return {
     fixed: d.fixed || d.items || [],
     recs: d.recs || {},
     plans,
-    range: d.range || { s: 7, e: 23 },
+    range: { s, e },
     lastT: d.lastT || 'w'
   };
 }

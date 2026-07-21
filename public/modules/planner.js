@@ -61,7 +61,7 @@ function renderTypeView() {
     html += ps.map((p) => `<div class="pv-it ${tCls(p.t)}" data-jump="${ds}" title="点击查看当天日程">
         <span class="pv-t">${fmtT(p.s)} – ${fmtT(p.e)}</span>
         <div class="pv-ns">${p.items.map((x) =>
-      `<div class="pv-n${x.d ? ' done' : ''}"><i class="pv-ck">${x.d ? '✓' : ''}</i><span>${esc(x.n)}</span></div>`).join('')}</div>
+      `<div class="pv-n${x.d ? ' done' : ''}" title="${esc(x.n)}"><i class="pv-ck">${x.d ? '✓' : ''}</i><span>${esc(x.n)}</span></div>`).join('')}</div>
       </div>`).join('');
   }
   $('plView').innerHTML = html || '<div class="empty">该月暂无此类型日程</div>';
@@ -143,7 +143,7 @@ function updGhost() {
 function cancelPick() {
   S.picking = false;
   S.selA = S.selB = null;
-  renderEdit();      // 恢复 ghost 与提示行
+  updGhost();
 }
 
 export function updNow() {
@@ -428,6 +428,7 @@ export function init() {
 
   // 时间轴空白处：第一次点击定起点，第二次点击定终点（按住拖选同样有效）
   $('plRows').onpointerdown = (e) => {
+    if (S.selecting || S.rz) return;   // 拖选/调整进行中（如多点触控）不重入
     const c = e.target.closest('.pl-cell');
     if (!c || !('i' in c.dataset)) return;
     const i = +c.dataset.i;
