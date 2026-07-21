@@ -83,7 +83,7 @@ export function render() {
 
 function toggleAdd(show) {
   $('addForm').style.display = show ? '' : 'none';
-  $('addTog').textContent = show ? '✕' : '＋';
+  $('addTog').textContent = show ? '×' : '＋';
   if (show) $('addInp').focus();
   else $('addInp').value = '';
 }

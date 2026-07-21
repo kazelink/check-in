@@ -108,8 +108,7 @@ textarea {
   align-items: center;
   justify-content: center;
   transition: .15s;
-  flex-shrink: 0;
-  padding-bottom: 2px
+  flex-shrink: 0
 }
 
 .icn:hover {
@@ -125,6 +124,16 @@ textarea {
 .icn.spin {
   animation: spin .8s linear infinite;
   pointer-events: none
+}
+
+#syncBtn::before {
+  content: '';
+  display: block;
+  width: 13px;
+  height: 13px;
+  border: 1.5px solid currentColor;
+  border-bottom-color: transparent;
+  border-radius: 50%
 }
 
 @keyframes spin {
