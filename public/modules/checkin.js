@@ -45,9 +45,9 @@ export function render() {
   box.innerHTML = S.data.fixed.map((it) => {
     const dt = (S.data.recs[t] || {})[it.id];
     const open = S.expandedId === it.id;
-    const rate = rateOf(it.id);
     let detail = '';
     if (open) {
+      const rate = rateOf(it.id);
       const dots = days.map((d) =>
         `<i class="wd${(S.data.recs[d] || {})[it.id] ? ' on' : ''}${d === t ? ' td' : ''}" title="${dispDate(d, 1)}"></i>`).join('');
       const hist = [];
@@ -56,7 +56,7 @@ export function render() {
         if (hist.length >= 10) break;
       }
       detail = `<div class="ci-detail">
-        <div class="ci-stat">连续 ${streak(it.id)} 天 · 累计 ${totalCk(it.id)} 次${rate ? ` · 完成率 ${rate.pct}%（${rate.checked}/${rate.days} 天）` : ''}</div>
+        ${rate ? `<div class="ci-stat">完成率 ${rate.pct}%（${rate.checked}/${rate.days} 天）</div>` : ''}
         <div class="ci-rec"><span>最近 7 天</span><span class="wdots">${dots}</span></div>
         ${hist.length
           ? hist.map((h) => `<div class="ci-rec"><span>${dispDate(h.d, 1)}</span><span>${h.t}</span></div>`).join('')
@@ -67,7 +67,7 @@ export function render() {
       <div class="ci-row">
         <button type="button" class="ck${dt ? ' on' : ''}${it.id === S.justCk ? ' pop' : ''}" data-ck="${it.id}"
           title="${dt ? '已打卡 ' + dt + '，点击取消' : '打卡'}">${dt ? '✓' : ''}</button>
-        <span class="ci-name" title="${esc(it.name)}">${esc(it.name)}</span>
+        <span class="ci-main"><span class="ci-name" title="${esc(it.name)}">${esc(it.name)}</span><span class="ci-brief">连续 ${streak(it.id)} 天 · 累计 ${totalCk(it.id)} 次</span></span>
         <button type="button" class="ci-del" data-del="${it.id}" title="删除">✕</button>
       </div>${detail}</div>`;
   }).join('');
