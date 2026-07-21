@@ -65,9 +65,9 @@ export function render() {
 
 export function init() {
   $('cc').onclick = (e) => {
-    const dir = e.target.dataset.dir;
-    if (dir) {
-      S.vD.setMonth(S.vD.getMonth() + parseInt(dir));
+    const btn = e.target.closest('[data-dir]');   // 按钮内是 SVG，需向上找
+    if (btn) {
+      S.vD.setMonth(S.vD.getMonth() + parseInt(btn.dataset.dir));
       render();
       if (S.typeView) R.plan();   // 类型汇总视图跟随翻月
     }
