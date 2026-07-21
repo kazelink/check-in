@@ -62,7 +62,7 @@ textarea {
   width: 100%;
   max-width: 1000px;
   gap: 14px;
-  grid-template-columns: 7fr 5fr;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
   grid-template-rows: auto auto 1fr;
   grid-template-areas: "plan calendar" "plan checkin" "plan stats";
   align-items: start

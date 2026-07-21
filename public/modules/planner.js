@@ -413,7 +413,8 @@ export function init() {
   // 已选起点时点击时间轴与日程块以外 → 取消起点
   document.addEventListener('pointerdown', (e) => {
     if (e.target.closest('.swal2-container')) return;   // 对话框内的点击不拦截
-    if (S.edit && !e.target.closest('#blkEd')) {
+    // 点删除 ✕ 时不动当前编辑器：可以在编辑中直接删除别的时间段
+    if (S.edit && !e.target.closest('#blkEd') && !e.target.closest('[data-px]')) {
       if (isEditorDirty()) {
         e.preventDefault();
         e.stopPropagation();
@@ -449,15 +450,8 @@ export function init() {
     updGhost();
   };
 
-  // 时间块：调整边缘 / 删除 / 就地编辑（正在选择时间段时不响应，避免误触）
+  // 时间块：删除 ✕ 任何状态下都可用；其余交互在选段时不响应，避免误触
   $('plBlocks').onpointerdown = (e) => {
-    if (S.picking) return;
-    const h = e.target.closest('.rz');
-    if (h) {
-      const blk = h.closest('[data-pb]');
-      if (blk) startRz(blk.dataset.pb, h.classList.contains('rz-t') ? 's' : 'e', e);
-      return;
-    }
     const x = e.target.closest('[data-px]');
     if (x) {
       e.preventDefault();
@@ -470,6 +464,13 @@ export function init() {
         if (!S.data.plans[S.selDate].length) delete S.data.plans[S.selDate];
         save(); renderEdit(); R.cal();
       });
+      return;
+    }
+    if (S.picking) return;
+    const h = e.target.closest('.rz');
+    if (h) {
+      const blk = h.closest('[data-pb]');
+      if (blk) startRz(blk.dataset.pb, h.classList.contains('rz-t') ? 's' : 'e', e);
       return;
     }
     const b = e.target.closest('[data-pb]');
@@ -522,8 +523,6 @@ export function init() {
         // 未拖动：视为已选起点，等待第二次点击选择结束时间
         S.picking = true;
         S.dragRect = $('plRows').getBoundingClientRect();
-        $('plHint').textContent = `已选起点 ${fmtT(RS + S.selA * 30)}，再点击结束时间（Esc 取消）`;
-        $('plHint').style.display = '';
         updGhost();
         return;
       }
