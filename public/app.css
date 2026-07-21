@@ -321,6 +321,19 @@ textarea {
   color: var(--t3)
 }
 
+.rg-sep {
+  display: flex;
+  align-items: center;
+  color: var(--t3)
+}
+
+.rg-sep svg {
+  width: 11px;
+  height: 11px;
+  fill: currentColor;
+  display: block
+}
+
 .pl-range select {
   border: 0;
   background: 0 0;
@@ -551,12 +564,21 @@ textarea {
   background: var(--hov);
   cursor: pointer;
   color: var(--red);
-  font-size: 12px;
-  padding: 2px 5px;
+  padding: 3px 4px;
   opacity: 0;
   transition: .15s;
   border-radius: 5px;
-  line-height: 1
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center
+}
+
+.pl-bx svg {
+  width: 10px;
+  height: 10px;
+  fill: currentColor;
+  display: block
 }
 
 .pl-blk:hover .pl-bx {
@@ -666,7 +688,15 @@ textarea {
 .be-time i {
   font-style: normal;
   color: var(--t3);
-  font-weight: 500
+  display: flex;
+  align-items: center
+}
+
+.be-time i svg {
+  width: 12px;
+  height: 12px;
+  fill: currentColor;
+  display: block
 }
 
 .be-ts {
@@ -1120,6 +1150,21 @@ textarea {
 
 .ck.pop {
   animation: pop .3s ease
+}
+
+.ck svg {
+  width: 13px;
+  height: 13px;
+  fill: currentColor;
+  display: block
+}
+
+.pv-ck svg,
+.be-dot svg {
+  width: 9px;
+  height: 9px;
+  fill: currentColor;
+  display: block
 }
 
 @keyframes pop {

@@ -1,4 +1,4 @@
-import { $, SH, TYPES, tCls, fmt, todayStr, parseDs, esc, fmtT, genId, dispDate } from './util.js';
+import { $, SH, TYPES, tCls, fmt, todayStr, parseDs, esc, fmtT, genId, dispDate, ICONS } from './util.js';
 import { S, R } from './ctx.js';
 import { toast, swalConfirm, swalUnsaved } from './ui.js';
 import { save } from './store.js';
@@ -63,7 +63,7 @@ function renderTypeView() {
     html += ps.map((p) => `<div class="pv-it ${tCls(p.t)}" data-jump="${ds}" title="点击查看当天日程">
         <span class="pv-t">${fmtT(p.s)} – ${fmtT(p.e)}</span>
         <div class="pv-ns">${p.items.map((x) =>
-      `<div class="pv-n${x.d ? ' done' : ''}" title="${esc(x.n)}"><i class="pv-ck">${x.d ? '✓' : ''}</i><span>${esc(x.n)}</span></div>`).join('')}</div>
+      `<div class="pv-n${x.d ? ' done' : ''}" title="${esc(x.n)}"><i class="pv-ck">${x.d ? ICONS.check : ''}</i><span>${esc(x.n)}</span></div>`).join('')}</div>
       </div>`).join('');
   }
   $('plView').innerHTML = html || '<div class="empty">该月暂无此类型日程</div>';
@@ -82,7 +82,7 @@ export function renderView() {
     return `<div class="pv-it${st} ${tCls(p.t)}">
       <span class="pv-t">${fmtT(p.s)} – ${fmtT(p.e)}</span>
       <div class="pv-ns">${p.items.map((x, j) =>
-      `<div class="pv-n${x.d ? ' done' : ''}" data-tg="${p.id}:${j}" title="${esc(x.n)}"><i class="pv-ck">${x.d ? '✓' : ''}</i><span>${esc(x.n)}</span></div>`).join('')}</div>
+      `<div class="pv-n${x.d ? ' done' : ''}" data-tg="${p.id}:${j}" title="${esc(x.n)}"><i class="pv-ck">${x.d ? ICONS.check : ''}</i><span>${esc(x.n)}</span></div>`).join('')}</div>
       ${st ? '<span class="pv-tag">进行中</span>' : ''}
     </div>`;
   }).join('');
@@ -116,7 +116,7 @@ function renderEdit() {
     return `<div class="pl-blk ${tCls(p.t)}" data-pb="${p.id}" style="top:${top + 1}px;height:${h - 2}px"
       title="${fmtT(p.s)}–${fmtT(p.e)} ${esc(p.items.map((x) => x.n).join('、'))}">
       ${lines}
-      <button type="button" class="pl-bx" data-px="${p.id}" title="删除">✕</button>
+      <button type="button" class="pl-bx" data-px="${p.id}" title="删除">${ICONS.close}</button>
       <div class="rz rz-t"></div><div class="rz rz-b"></div>
     </div>`;
   }).join('');
@@ -236,12 +236,12 @@ function buildEditor(items) {
   d.innerHTML = `<div class="be-head">
       <span class="be-time">
         <select class="be-ts" data-be="s">${opts(RS, RE - 30, Math.max(RS, Math.min(S.edit.s, RE - 30)))}</select>
-        <i>–</i>
+        <i>${ICONS.arrow}</i>
         <select class="be-ts" data-be="e">${opts(RS + 30, RE, Math.min(RE, Math.max(S.edit.e, RS + 30)))}</select>
       </span>
       <span class="be-r">
         <span class="be-types">${TYPES.map((t) =>
-    `<button type="button" class="be-dot ${t.cls}" data-t="${t.k}" title="${t.n}">${t.k === S.edit.t ? '✓' : ''}</button>`).join('')}</span>
+    `<button type="button" class="be-dot ${t.cls}" data-t="${t.k}" title="${t.n}">${t.k === S.edit.t ? ICONS.check : ''}</button>`).join('')}</span>
         <button type="button" class="be-save">保存</button>
       </span>
     </div><div class="be-lines"></div>`;
@@ -323,7 +323,7 @@ function buildEditor(items) {
     ev.preventDefault();
     S.edit.t = dot.dataset.t;
     d.className = 'blk-ed ' + tCls(S.edit.t);
-    d.querySelectorAll('.be-dot').forEach((x) => x.textContent = x.dataset.t === S.edit.t ? '✓' : '');
+    d.querySelectorAll('.be-dot').forEach((x) => x.innerHTML = x.dataset.t === S.edit.t ? ICONS.check : '');
   });
 
   d.addEventListener('click', (ev) => {

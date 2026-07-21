@@ -2,6 +2,13 @@ export const $ = (id) => document.getElementById(id);
 
 export const DAY = 86400000;
 export const SH = 20; // 与 CSS .pl-row 高度一致
+
+// Remix Icon 内联 SVG（与 app.html 中静态图标同源）
+export const ICONS = {
+  check: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 15.172l9.192-9.193 1.415 1.414L10 17.999l-6.364-6.364 1.414-1.414z"/></svg>',
+  close: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 10.586l4.95-4.95 1.414 1.414-4.95 4.95 4.95 4.95-1.414 1.414-4.95-4.95-4.95 4.95-1.414-1.414 4.95-4.95-4.95-4.95L7.05 5.636z"/></svg>',
+  arrow: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.172 11l-5.364-5.364 1.414-1.414L20 12l-7.778 7.778-1.414-1.414L16.172 13H4v-2z"/></svg>'
+};
 export const WD = ['日', '一', '二', '三', '四', '五', '六'];
 
 export const TYPES = [

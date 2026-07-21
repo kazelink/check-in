@@ -1,4 +1,4 @@
-import { $, DAY, fmt, todayStr, parseDs, esc, genId, dispDate } from './util.js';
+import { $, DAY, fmt, todayStr, parseDs, esc, genId, dispDate, ICONS } from './util.js';
 import { S } from './ctx.js';
 import { swalConfirm } from './ui.js';
 import { save } from './store.js';
@@ -73,7 +73,7 @@ export function render() {
     return `<div class="ci-item${open ? ' open' : ''}${sorting ? ' sorting' : ''}" data-it="${it.id}">
       <div class="ci-row">
         <button type="button" class="ck${dt ? ' on' : ''}${it.id === S.justCk ? ' pop' : ''}" data-ck="${it.id}"
-          title="${dt ? '已打卡 ' + dt + '，点击取消' : '打卡'}">${dt ? '✓' : ''}</button>
+          title="${dt ? '已打卡 ' + dt + '，点击取消' : '打卡'}">${dt ? ICONS.check : ''}</button>
         ${reorderMode ? '<button type="button" class="ci-drag" data-sort-handle title="拖动排序" aria-label="拖动排序"><svg viewBox="0 0 24 24"><path d="M3 4h18v2H3V4zm0 7h18v2H3v-2zm0 7h18v2H3v-2z"/></svg></button>' : ''}
         <span class="ci-main"><span class="ci-name" title="${esc(it.name)}">${esc(it.name)}</span><span class="ci-brief">连续 ${streak(it.id)} 天 · 累计 ${totalCk(it.id)} 次</span></span>
         <button type="button" class="ci-del" data-del="${it.id}" title="删除"><svg viewBox="0 0 24 24"><path d="M12 10.586l4.95-4.95 1.414 1.414-4.95 4.95 4.95 4.95-1.414 1.414-4.95-4.95-4.95 4.95-1.414-1.414 4.95-4.95-4.95-4.95L7.05 5.636z"/></svg></button>
