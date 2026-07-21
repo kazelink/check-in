@@ -2,12 +2,9 @@ import { $, DAY, fmt, todayStr, parseDs, esc, genId, dispDate } from './util.js'
 import { S } from './ctx.js';
 import { swalConfirm } from './ui.js';
 import { save } from './store.js';
+import { bindDragSort } from './drag-sort.js';
 
-const LONG_PRESS_MS = 360;
-const DRAG_CANCEL_PX = 8;
-
-let sortDrag = null;
-let suppressClickUntil = 0;
+let sorter = null;
 
 function streak(id) {
   let n = 0, d = new Date();
@@ -69,7 +66,7 @@ export function render() {
           : '<div class="ci-rec">暂无打卡记录</div>'}
       </div>`;
     }
-    const sorting = sortDrag?.active && sortDrag.id === it.id;
+    const sorting = sorter?.isDragging(it.id);
     return `<div class="ci-item${open ? ' open' : ''}${sorting ? ' sorting' : ''}" data-it="${it.id}">
       <div class="ci-row">
         <button type="button" class="ck${dt ? ' on' : ''}${it.id === S.justCk ? ' pop' : ''}" data-ck="${it.id}"
@@ -100,37 +97,6 @@ function moveFixedItem(id, targetId) {
   return true;
 }
 
-function clearSortTimer() {
-  if (sortDrag?.timer) clearTimeout(sortDrag.timer);
-}
-
-function activateSort(pointerId) {
-  if (!sortDrag || sortDrag.pointerId !== pointerId) return;
-  sortDrag.active = true;
-  sortDrag.changed = false;
-  suppressClickUntil = Date.now() + 600;
-  $('ciList').classList.add('sorting');
-  render();
-}
-
-function finishSort() {
-  if (!sortDrag) return;
-  const wasActive = sortDrag.active;
-  const changed = sortDrag.changed;
-  clearSortTimer();
-  sortDrag = null;
-  $('ciList').classList.remove('sorting');
-  if (wasActive) {
-    suppressClickUntil = Date.now() + 600;
-    if (changed) save();
-    render();
-  }
-}
-
-function isCoarsePointer() {
-  return window.matchMedia?.('(hover: none), (pointer: coarse)').matches;
-}
-
 export function init() {
   $('addForm').onsubmit = (e) => {
     e.preventDefault();
@@ -147,61 +113,19 @@ export function init() {
     if (e.key === 'Escape') toggleAdd(false);
   });
 
-  $('ciList').addEventListener('pointerdown', (e) => {
-    if (e.button && e.button !== 0) return;
-    const handle = e.target.closest('[data-sort-handle]');
-    if (e.target.closest('[data-ck],[data-del]')) return;
-    if (isCoarsePointer() && !handle) return;
-    const item = e.target.closest('.ci-item');
-    if (!item) return;
-    if (handle) e.preventDefault();
-
-    clearSortTimer();
-    sortDrag = {
-      id: item.dataset.it,
-      pointerId: e.pointerId,
-      x: e.clientX,
-      y: e.clientY,
-      active: false,
-      changed: false,
-      timer: handle ? null : setTimeout(() => activateSort(e.pointerId), LONG_PRESS_MS)
-    };
-    if (handle) activateSort(e.pointerId);
-  });
-
-  document.addEventListener('pointermove', (e) => {
-    if (!sortDrag || sortDrag.pointerId !== e.pointerId) return;
-    const moved = Math.abs(e.clientX - sortDrag.x) + Math.abs(e.clientY - sortDrag.y);
-    if (!sortDrag.active && moved > DRAG_CANCEL_PX) {
-      finishSort();
-      return;
-    }
-    if (!sortDrag.active) return;
-
-    e.preventDefault();
-    const target = document.elementFromPoint(e.clientX, e.clientY)?.closest('.ci-item');
-    if (!target) return;
-    if (moveFixedItem(sortDrag.id, target.dataset.it)) {
-      sortDrag.changed = true;
-      render();
-      $('ciList').classList.add('sorting');
-    }
-  });
-
-  document.addEventListener('pointerup', (e) => {
-    if (sortDrag && sortDrag.pointerId === e.pointerId) finishSort();
-  });
-
-  document.addEventListener('pointercancel', (e) => {
-    if (sortDrag && sortDrag.pointerId === e.pointerId) finishSort();
+  sorter = bindDragSort({
+    root: $('ciList'),
+    item: '.ci-item',
+    handle: '[data-sort-handle]',
+    ignore: '[data-ck],[data-del]',
+    idOf: (el) => el.dataset.it,
+    move: moveFixedItem,
+    render,
+    save
   });
 
   $('ciList').onclick = (e) => {
-    if (Date.now() < suppressClickUntil) {
-      e.preventDefault();
-      e.stopPropagation();
-      return;
-    }
+    if (sorter.suppressClick(e)) return;
 
     const ck = e.target.closest('[data-ck]');
     const del = e.target.closest('[data-del]');

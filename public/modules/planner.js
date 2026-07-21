@@ -2,6 +2,7 @@ import { $, SH, TYPES, tCls, fmt, todayStr, parseDs, esc, fmtT, genId, dispDate 
 import { S, R } from './ctx.js';
 import { toast, swalConfirm, swalUnsaved } from './ui.js';
 import { save } from './store.js';
+import { isCoarsePointer } from './drag-sort.js';
 
 const dayPlans = () => S.data.plans[S.selDate] || [];
 
@@ -406,10 +407,6 @@ function finishLineSort() {
     if (!isCoarsePointer()) lineSort.inp.focus({ preventScroll: true });
   }
   lineSort = null;
-}
-
-function isCoarsePointer() {
-  return window.matchMedia?.('(hover: none), (pointer: coarse)').matches;
 }
 
 function handleLineSortMove(e) {
