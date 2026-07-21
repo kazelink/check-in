@@ -121,6 +121,17 @@ textarea {
   font-size: 13px
 }
 
+.icn.spin {
+  animation: spin .8s linear infinite;
+  pointer-events: none
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg)
+  }
+}
+
 .chip {
   border: 0;
   background: var(--acc-t);

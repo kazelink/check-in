@@ -110,3 +110,13 @@ export async function adoptRemote() {
     await flush();
   }
 }
+
+// 手动刷新：先推本地未同步改动，再拉取服务端最新数据
+export async function refresh() {
+  await flush();
+  const remote = await fetchRemote();
+  if (remote) {
+    S.data = normalize(remote);
+    saveLocal();
+  }
+}
