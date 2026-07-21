@@ -20,7 +20,7 @@ function ensureSwal() {
   });
 }
 
-const BASE = { scrollbarPadding: false, heightAuto: false };
+const BASE = { scrollbarPadding: false, heightAuto: false, allowOutsideClick: false };
 
 export async function swalConfirm(title, text) {
   try {
@@ -52,7 +52,6 @@ export async function swalUnsaved() {
       icon: 'warning',
       showDenyButton: true,
       showCancelButton: true,
-      allowOutsideClick: false,
       confirmButtonText: '保存',
       denyButtonText: '不保存',
       cancelButtonText: '继续编辑',
