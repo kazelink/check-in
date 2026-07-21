@@ -111,6 +111,12 @@ textarea {
   flex-shrink: 0
 }
 
+.icn svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor
+}
+
 .icn:hover {
   background: var(--hov);
   color: var(--t1)
@@ -124,16 +130,6 @@ textarea {
 .icn.spin {
   animation: spin .8s linear infinite;
   pointer-events: none
-}
-
-#syncBtn::before {
-  content: '';
-  display: block;
-  width: 13px;
-  height: 13px;
-  border: 1.5px solid currentColor;
-  border-bottom-color: transparent;
-  border-radius: 50%
 }
 
 @keyframes spin {
@@ -1022,12 +1018,19 @@ textarea {
   border-radius: 10px;
   background: linear-gradient(135deg, var(--acc), #7d95f7);
   color: #fff;
-  font-size: 13px;
   line-height: 1;
   cursor: pointer;
   flex-shrink: 0;
   box-shadow: 0 2px 6px rgba(78, 110, 242, .25);
-  transition: all .2s ease
+  transition: all .2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center
+}
+
+.add-btn svg {
+  width: 16px;
+  height: 16px
 }
 
 .add-btn:hover {
@@ -1072,8 +1075,13 @@ textarea {
 .ci-drag {
   width: 22px;
   height: 26px;
-  font-size: 14px;
   margin-left: -4px
+}
+
+.ci-drag svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor
 }
 
 .ci-list.sorting .ci-drag,
@@ -1169,7 +1177,6 @@ textarea {
   border: 0;
   background: var(--hov);
   color: var(--red);
-  font-size: 12px;
   line-height: 1;
   cursor: pointer;
   width: 26px;
@@ -1182,6 +1189,12 @@ textarea {
   flex-shrink: 0;
   transition: .15s;
   opacity: 0
+}
+
+.ci-del svg {
+  width: 12px;
+  height: 12px;
+  fill: currentColor
 }
 
 .ci-row:hover .ci-del {

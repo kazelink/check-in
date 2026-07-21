@@ -30,8 +30,8 @@
     <div class="card a-pl">
       <div class="c-tit">
         <div class="pl-nav">
-          <button type="button" class="icn" id="dPrev" title="前一天">❮</button>
-          <button type="button" class="icn" id="dNext" title="后一天">❯</button>
+          <button type="button" class="icn" id="dPrev" title="前一天"><svg viewBox="0 0 24 24"><path d="M10.828 12l4.95 4.95-1.414 1.414L8 12l6.364-6.364 1.414 1.414z"/></svg></button>
+          <button type="button" class="icn" id="dNext" title="后一天"><svg viewBox="0 0 24 24"><path d="M13.172 12l-4.95-4.95 1.414-1.414L16 12l-6.364 6.364-1.414-1.414z"/></svg></button>
           <span class="pl-date" id="plDate">--</span>
           <button type="button" class="chip" id="dToday" style="display:none">回到今天</button>
         </div>
@@ -62,12 +62,12 @@
     <div class="card a-cal">
       <div class="c-tit">
         <div class="cal-ctrl" id="cc">
-          <button type="button" class="icn" data-dir="-1" title="上个月">❮</button>
-          <button type="button" class="icn" data-dir="1" title="下个月">❯</button>
+          <button type="button" class="icn" data-dir="-1" title="上个月"><svg viewBox="0 0 24 24"><path d="M10.828 12l4.95 4.95-1.414 1.414L8 12l6.364-6.364 1.414 1.414z"/></svg></button>
+          <button type="button" class="icn" data-dir="1" title="下个月"><svg viewBox="0 0 24 24"><path d="M13.172 12l-4.95-4.95 1.414-1.414L16 12l-6.364 6.364-1.414-1.414z"/></svg></button>
           <span class="cal-month" id="cm">--</span>
         </div>
         <span class="pl-act">
-          <button type="button" class="icn" id="syncBtn" title="从服务器刷新数据"></button>
+          <button type="button" class="icn" id="syncBtn" title="从服务器刷新数据"><svg viewBox="0 0 24 24"><path d="M18.364 5.636L16.95 7.05A7 7 0 1 0 19 12h2a9 9 0 1 1-2.636-6.364z"/></svg></button>
           <button type="button" class="chip" id="calToday">今天</button>
         </span>
       </div>
@@ -80,13 +80,13 @@
         <span class="ci-sum">
           <span class="pbar" id="pbar" style="display:none"><i id="pfill"></i></span>
           <span class="ci-num" id="ciDone"></span>
-          <button type="button" class="icn" id="reorderTog" title="拖动排序">☰</button>
-          <button type="button" class="icn" id="addTog" title="添加打卡事项">＋</button>
+          <button type="button" class="icn" id="reorderTog" title="拖动排序"><svg viewBox="0 0 24 24"><path d="M3 4h18v2H3V4zm0 7h18v2H3v-2zm0 7h18v2H3v-2z"/></svg></button>
+          <button type="button" class="icn" id="addTog" title="添加打卡事项"><svg viewBox="0 0 24 24"><path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2z"/></svg></button>
         </span>
       </div>
       <form id="addForm" class="add-row" style="display:none">
         <input type="text" id="addInp" class="add-inp" maxlength="40" autocomplete="off">
-        <button type="submit" class="add-btn" title="确定">✓</button>
+        <button type="submit" class="add-btn" title="确定"><svg viewBox="0 0 24 24" fill="#fff"><path d="M10 15.172l9.192-9.193 1.415 1.414L10 17.999l-6.364-6.364 1.414-1.414z"/></svg></button>
       </form>
       <div class="ci-list" id="ciList"></div>
     </div>
