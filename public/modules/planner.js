@@ -25,7 +25,6 @@ export function renderPlan() {
     const now = new Date();
     const y = S.vD.getFullYear(), m = S.vD.getMonth();
     $('plDate').textContent = `${y !== now.getFullYear() ? y + '年' : ''}${m + 1}月 · ${ty ? ty.n : ''}`;
-    $('dToday').style.display = 'none';
     $('plRangeSel').style.display = 'none';
     $('plEdit').style.display = 'none';
     $('plView').style.display = '';
@@ -33,9 +32,7 @@ export function renderPlan() {
     return;
   }
 
-  const t = todayStr();
   $('plDate').textContent = dispDate(S.selDate);
-  $('dToday').style.display = S.selDate === t ? 'none' : '';
   $('modeBtn').textContent = S.editMode ? '完成' : '编辑';
   $('modeBtn').classList.toggle('on', S.editMode);
   $('plRangeSel').style.display = S.editMode ? '' : 'none';
@@ -678,5 +675,4 @@ export function init() {
 
   $('dPrev').onclick = () => { const d = parseDs(S.selDate); d.setDate(d.getDate() - 1); gotoDate(fmt(d)); };
   $('dNext').onclick = () => { const d = parseDs(S.selDate); d.setDate(d.getDate() + 1); gotoDate(fmt(d)); };
-  $('dToday').onclick = () => gotoDate(todayStr());
 }
