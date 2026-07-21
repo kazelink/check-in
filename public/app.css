@@ -100,7 +100,7 @@ textarea {
   border: 0;
   background: 0 0;
   color: var(--t3);
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1;
   border-radius: 8px;
   cursor: pointer;
@@ -115,10 +115,6 @@ textarea {
 .icn:hover {
   background: var(--hov);
   color: var(--t1)
-}
-
-.icn.sm {
-  font-size: 13px
 }
 
 .icn.on {
@@ -996,7 +992,7 @@ textarea {
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 0 11px;
-  height: 34px;
+  height: 30px;
   font-size: 14px;
   outline: 0;
   background: var(--hov);
@@ -1011,13 +1007,13 @@ textarea {
 }
 
 .add-btn {
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   border: 0;
   border-radius: 10px;
   background: linear-gradient(135deg, var(--acc), #7d95f7);
   color: #fff;
-  font-size: 15px;
+  font-size: 13px;
   line-height: 1;
   cursor: pointer;
   flex-shrink: 0;
