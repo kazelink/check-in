@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { CONFIG } from '../lib/config.js';
+import { setAuthCookie } from '../lib/auth.js';
 import { signToken } from '../lib/jwt.js';
 import { ensureSchema } from '../lib/schema.js';
 import { respondError } from '../lib/utils.js';
@@ -52,12 +53,6 @@ function lockedResponse(c, lockedUntil, now) {
   return respondError(c, `尝试过多，请 ${waitSec} 秒后再试`, 429);
 }
 
-function isHttpsRequest(c) {
-  const forwardedProto = (c.req.header('x-forwarded-proto') || '').split(',')[0].trim().toLowerCase();
-  if (forwardedProto) return forwardedProto === 'https';
-  try { return new URL(c.req.url).protocol === 'https:'; } catch { return true; }
-}
-
 router.post('/', async (c) => {
   const ip = c.req.header('CF-Connecting-IP')
     || c.req.header('X-Real-IP')
@@ -107,15 +102,7 @@ router.post('/', async (c) => {
       Promise.resolve(ensureSchema(c.env)).catch(err => console.error('ensureSchema error after login:', err))
     );
 
-    const cookieOpts = [
-      `checkin_auth=${token}`,
-      'HttpOnly',
-      ...(isHttpsRequest(c) ? ['Secure'] : []),
-      'SameSite=Lax',
-      `Max-Age=${CONFIG.JWT_EXP}`,
-      'Path=/'
-    ].join('; ');
-    c.header('Set-Cookie', cookieOpts);
+    setAuthCookie(c, token);
 
     return c.json({ success: true, nonce, token });
   } catch {

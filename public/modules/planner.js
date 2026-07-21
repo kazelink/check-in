@@ -194,15 +194,24 @@ function saveEditor() {
   if (dirty) toast('已保存');
 }
 
-function settleEditor() {
-  if (!isEditorDirty()) { commitEditor(); return; }
-  if (settleEditor._busy) return;
-  settleEditor._busy = true;
-  swalUnsaved().then((r) => {
-    settleEditor._busy = false;
+async function resolveEditorChanges() {
+  if (!S.edit) return true;
+  if (!isEditorDirty()) { commitEditor(); return true; }
+  if (resolveEditorChanges._busy) return false;
+  resolveEditorChanges._busy = true;
+  try {
+    const r = await swalUnsaved();
     if (r === 'save') saveEditor();
     else if (r === 'discard') discardEditor();
-  });
+    else return false;
+    return true;
+  } finally {
+    resolveEditorChanges._busy = false;
+  }
+}
+
+function settleEditor() {
+  resolveEditorChanges();
 }
 
 function buildEditor(items) {
@@ -398,7 +407,7 @@ export function init() {
   // 捕获阶段：编辑器外点击先结算（脏则询问并拦截本次点击；点 ✕ 删除例外，不动编辑器）
   document.addEventListener('pointerdown', (e) => {
     if (e.target.closest('.swal2-container')) return;
-    if (S.edit && !e.target.closest('#blkEd') && !e.target.closest('[data-px]')) {
+    if (S.edit && !e.target.closest('#blkEd') && !e.target.closest('[data-px]') && !e.target.closest('#modeBtn')) {
       if (isEditorDirty()) {
         e.preventDefault();
         e.stopPropagation();
@@ -544,8 +553,9 @@ export function init() {
 
   $('tvBack').onclick = () => setTypeView(S.typeView);
 
-  $('modeBtn').onclick = () => {
-    if (S.edit) commitEditor();
+  $('modeBtn').onclick = async () => {
+    if (S.editMode && S.edit && !(await resolveEditorChanges())) return;
+    else if (S.edit) commitEditor();
     S.editMode = !S.editMode;
     S.selecting = false; S.picking = false; S.selA = S.selB = null; S.rz = null;
     renderPlan();

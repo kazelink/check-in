@@ -1,4 +1,5 @@
-import { verifyToken } from './jwt.js';
+import { CONFIG } from './config.js';
+import { signToken, verifyToken } from './jwt.js';
 import { respondError } from './utils.js';
 
 const COOKIE_RE = /(?:^|;\s*)checkin_auth=([^;]*)/;
@@ -25,10 +26,40 @@ export async function authMiddleware(c, next) {
   }
 
   await next();
+
+  if (shouldRefreshToken(payload)) {
+    const refreshedToken = await signToken(secret, nonce);
+    setAuthCookie(c, refreshedToken);
+    c.header('X-Auth-Token', refreshedToken);
+  }
 }
 
 function parseCookie(cookieStr) {
   if (!cookieStr) return null;
   const match = cookieStr.match(COOKIE_RE);
   return match ? match[1] : null;
+}
+
+function shouldRefreshToken(payload) {
+  const expSec = Number(payload?.exp);
+  if (!Number.isFinite(expSec)) return false;
+  return expSec - Math.floor(Date.now() / 1000) <= CONFIG.JWT_REFRESH_THRESHOLD;
+}
+
+export function setAuthCookie(c, token) {
+  const cookieOpts = [
+    `checkin_auth=${token}`,
+    'HttpOnly',
+    ...(isHttpsRequest(c) ? ['Secure'] : []),
+    'SameSite=Lax',
+    `Max-Age=${CONFIG.JWT_EXP}`,
+    'Path=/'
+  ].join('; ');
+  c.header('Set-Cookie', cookieOpts);
+}
+
+function isHttpsRequest(c) {
+  const forwardedProto = (c.req.header('x-forwarded-proto') || '').split(',')[0].trim().toLowerCase();
+  if (forwardedProto) return forwardedProto === 'https';
+  try { return new URL(c.req.url).protocol === 'https:'; } catch { return true; }
 }
