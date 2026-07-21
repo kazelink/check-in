@@ -128,8 +128,11 @@ textarea {
 }
 
 .icn.spin {
-  animation: spin .8s linear infinite;
   pointer-events: none
+}
+
+.icn.spin svg {
+  animation: spin .8s linear infinite
 }
 
 @keyframes spin {
