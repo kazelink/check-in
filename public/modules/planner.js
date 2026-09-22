@@ -2,10 +2,13 @@ import { $, SH, TYPES, tCls, fmt, todayStr, parseDs, esc, fmtT, genId, dispDate 
 import { S, R } from './ctx.js';
 import { toast, swalConfirm, swalUnsaved } from './ui.js';
 import { save } from './store.js';
+import { isCoarsePointer } from './drag-sort.js';
 
 const dayPlans = () => S.data.plans[S.selDate] || [];
 
 let blkTap = null;   // 块上的按下点：抬起未位移才算点按打开，滑动滚屏不误触
+let lineSort = null;
+let lineSortSuppressUntil = 0;
 
 export function renderPlan() {
   const tv = S.typeView;
@@ -267,7 +270,7 @@ function buildEditor(items) {
       const i = ins.indexOf(ev.target);
       if (i > 0 && ev.target.value === '') {
         ev.preventDefault();
-        ev.target.remove();
+        ev.target.closest('.be-line')?.remove();
         ins[i - 1].focus();
       }
     } else if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
@@ -280,6 +283,18 @@ function buildEditor(items) {
   });
 
   d.addEventListener('pointerdown', (ev) => {
+    const handle = ev.target.closest('[data-line-sort]');
+    if (!handle) return;
+    const inp = handle.closest('.be-line')?.querySelector('.be-i');
+    if (!inp || !inp.value.trim()) return;
+    ev.preventDefault();
+    lineSort = { inp, pointerId: ev.pointerId, active: true };
+    lineSortSuppressUntil = Date.now() + 600;
+    inp.classList.add('sorting');
+    d.classList.add('sorting');
+  });
+
+  d.addEventListener('pointerdown', (ev) => {
     const dot = ev.target.closest('.be-dot');
     if (!dot) return;
     ev.preventDefault();
@@ -289,6 +304,11 @@ function buildEditor(items) {
   });
 
   d.addEventListener('click', (ev) => {
+    if (Date.now() < lineSortSuppressUntil) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      return;
+    }
     if (ev.target.closest('.be-save')) { saveEditor(); return; }
     if (ev.target === d || ev.target.classList.contains('be-lines')) {
       const ins = d.querySelectorAll('.be-i');
@@ -298,14 +318,48 @@ function buildEditor(items) {
 }
 
 function addLine(v = '', foc) {
+  const row = document.createElement('div');
+  row.className = 'be-line';
+  const handle = document.createElement('button');
+  handle.type = 'button';
+  handle.className = 'be-drag';
+  handle.dataset.lineSort = '1';
+  handle.title = '拖动排序';
+  handle.setAttribute('aria-label', '拖动排序');
+  handle.textContent = '☰';
   const inp = document.createElement('input');
   inp.type = 'text';
   inp.className = 'be-i';
   inp.maxLength = 60;
   inp.autocomplete = 'off';
   inp.value = v;
-  $('blkEd').querySelector('.be-lines').appendChild(inp);
+  row.append(handle, inp);
+  $('blkEd').querySelector('.be-lines').appendChild(row);
   if (foc) inp.focus();
+}
+
+function finishLineSort() {
+  if (!lineSort) return false;
+  const { inp } = lineSort;
+  lineSort = null;
+  inp.classList.remove('sorting');
+  $('blkEd')?.classList.remove('sorting');
+  lineSortSuppressUntil = Date.now() + 600;
+  if (!isCoarsePointer()) inp.focus({ preventScroll: true });
+  return true;
+}
+
+function moveEditorLine(e) {
+  if (!lineSort || lineSort.pointerId !== e.pointerId) return false;
+  e.preventDefault();
+  const target = document.elementFromPoint(e.clientX, e.clientY)?.closest('.be-line');
+  const row = lineSort.inp.closest('.be-line');
+  if (!target || !row || target === row || !target.closest('#blkEd')) return true;
+  const lines = row.parentElement;
+  const rows = [...lines.querySelectorAll('.be-line')];
+  const from = rows.indexOf(row), to = rows.indexOf(target);
+  lines.insertBefore(row, from < to ? target.nextSibling : target);
+  return true;
 }
 
 function commitEditor() {
@@ -465,6 +519,7 @@ export function init() {
   };
 
   document.addEventListener('pointermove', (e) => {
+    if (moveEditorLine(e)) return;
     if (blkTap && Math.abs(e.clientX - blkTap.x) + Math.abs(e.clientY - blkTap.y) > 10) blkTap = null;
     if (!S.selecting && !S.rz && !S.picking) return;
 
@@ -498,7 +553,8 @@ export function init() {
     }
   });
 
-  document.addEventListener('pointerup', () => {
+  document.addEventListener('pointerup', (e) => {
+    if (lineSort?.pointerId === e.pointerId && finishLineSort()) return;
     if (blkTap) {
       const p = dayPlans().find((q) => q.id === blkTap.id);
       blkTap = null;
@@ -527,7 +583,8 @@ export function init() {
     }
   });
 
-  document.addEventListener('pointercancel', () => {
+  document.addEventListener('pointercancel', (e) => {
+    if (lineSort?.pointerId === e.pointerId) finishLineSort();
     blkTap = null;
     if (S.selecting) { S.selecting = false; S.selA = S.selB = null; updGhost(); }
     if (S.rz) { S.rz = null; $('plGhost').style.display = 'none'; renderEdit(); }

@@ -2,6 +2,7 @@ import { $ } from './util.js';
 
 const TOKEN_KEY = 'checkin_token';
 const NONCE_KEY = 'checkin_nonce';
+const REFRESHED_TOKEN_HEADER = 'X-Auth-Token';
 
 export const hasSession = () =>
   Boolean(localStorage.getItem(TOKEN_KEY) && localStorage.getItem(NONCE_KEY));
@@ -23,6 +24,8 @@ export async function authedFetch(url, opts = {}) {
   headers.set('X-Session-Nonce', localStorage.getItem(NONCE_KEY) || '');
 
   const res = await fetch(url, { ...opts, headers });
+  const refreshedToken = res.headers.get(REFRESHED_TOKEN_HEADER);
+  if (refreshedToken) localStorage.setItem(TOKEN_KEY, refreshedToken);
   if (res.status === 401) {
     clearSession();
     if (expiredCb) expiredCb();

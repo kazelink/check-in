@@ -20,7 +20,7 @@ function ensureSwal() {
   });
 }
 
-const BASE = { scrollbarPadding: false, heightAuto: false };
+const BASE = { scrollbarPadding: false, heightAuto: false, allowOutsideClick: false };
 
 export async function swalConfirm(title, text) {
   try {

@@ -120,6 +120,10 @@ textarea {
   color: var(--t1)
 }
 
+.icn.on { color: var(--acc); background: var(--acc-t) }
+.icn.spin { animation: spin .8s linear infinite; pointer-events: none }
+@keyframes spin { to { transform: rotate(360deg) } }
+
 .icn.sm {
   font-size: 13px
 }
@@ -741,6 +745,13 @@ textarea {
   border-bottom-color: var(--bc)
 }
 
+.be-lines { display: flex; flex-direction: column }
+.be-line { display: flex; align-items: center; gap: 7px }
+.be-line .be-i { flex: 1; min-width: 0 }
+.be-line:last-child .be-i { border-bottom-color: transparent }
+.blk-ed.sorting .be-line { cursor: grabbing }
+.be-line:has(.be-i.sorting) { background: var(--bt); border-radius: 6px; opacity: .75 }
+
 /* ---------- 日历 ---------- */
 .a-cal {
   grid-area: calendar;
@@ -984,6 +995,15 @@ textarea {
 .ci-item:last-child {
   border-bottom: 0
 }
+
+.ci-list.sorting .ci-item { transition: background .15s, opacity .15s }
+.ci-item.sorting { background: var(--hov); opacity: .72 }
+.ci-drag, .be-drag {
+  border: 0; background: transparent; color: var(--t3); cursor: grab; flex-shrink: 0;
+  touch-action: none; user-select: none; -webkit-user-select: none
+}
+.ci-drag { width: 22px; height: 26px; margin-left: -4px; font-size: 14px }
+.ci-list.sorting .ci-drag, .ci-drag:active, .be-drag:active { cursor: grabbing; color: var(--acc) }
 
 .ci-row {
   display: flex;

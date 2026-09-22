@@ -2,7 +2,7 @@ import { $, todayStr } from './util.js';
 import { S, R } from './ctx.js';
 import { toast } from './ui.js';
 import { hasSession, initLogin, showLogin, onSessionExpired } from './auth.js';
-import { loadLocal, adoptRemote, save, flush } from './store.js';
+import { loadLocal, adoptRemote, save, flush, refresh } from './store.js';
 import * as checkin from './checkin.js';
 import * as planner from './planner.js';
 import * as calendar from './calendar.js';
@@ -32,6 +32,21 @@ function startApp() {
   planner.init();
   calendar.init();
   stats.init();
+
+  $('syncBtn').onclick = async () => {
+    const btn = $('syncBtn');
+    if (btn.classList.contains('spin')) return;
+    btn.classList.add('spin');
+    try {
+      await refresh();
+      R.items(); R.cal(); R.plan();
+      toast('已同步最新数据');
+    } catch (e) {
+      if (!(e && e.unauth)) toast('同步失败，请检查网络');
+    } finally {
+      btn.classList.remove('spin');
+    }
+  };
 
   R.items();
   R.cal();

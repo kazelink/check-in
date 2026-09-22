@@ -36,6 +36,7 @@ export async function signToken(secret, nonce) {
   const payload = base64urlEncode(JSON.stringify({
     sub: 'admin',
     nonce,
+    iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + CONFIG.JWT_EXP
   }));
   const data = enc.encode(`${header}.${payload}`);

@@ -110,3 +110,12 @@ export async function adoptRemote() {
     await flush();
   }
 }
+
+export async function refresh() {
+  await flush();
+  const remote = await fetchRemote();
+  if (remote) {
+    S.data = normalize(remote);
+    saveLocal();
+  }
+}

@@ -2,6 +2,10 @@ import { $, DAY, fmt, todayStr, parseDs, esc, genId, dispDate } from './util.js'
 import { S } from './ctx.js';
 import { swalConfirm } from './ui.js';
 import { save } from './store.js';
+import { bindDragSort } from './drag-sort.js';
+
+let sorter = null;
+let reorderMode = false;
 
 function streak(id) {
   let n = 0, d = new Date();
@@ -28,6 +32,8 @@ function rateOf(id) {
 
 export function render() {
   const t = todayStr(), box = $('ciList'), N = S.data.fixed.length;
+  box.classList.toggle('reorder-mode', reorderMode && N > 1);
+  $('reorderTog').classList.toggle('on', reorderMode);
   const done = S.data.fixed.filter((i) => (S.data.recs[t] || {})[i.id]).length;
   $('ciDone').textContent = N ? `${done}/${N}` : '';
   $('pbar').style.display = N ? '' : 'none';
@@ -63,14 +69,26 @@ export function render() {
           : '<div class="ci-rec">暂无打卡记录</div>'}
       </div>`;
     }
-    return `<div class="ci-item${open ? ' open' : ''}" data-it="${it.id}">
+    const sorting = sorter?.isDragging(it.id);
+    return `<div class="ci-item${open ? ' open' : ''}${sorting ? ' sorting' : ''}" data-it="${it.id}">
       <div class="ci-row">
         <button type="button" class="ck${dt ? ' on' : ''}${it.id === S.justCk ? ' pop' : ''}" data-ck="${it.id}"
           title="${dt ? '已打卡 ' + dt + '，点击取消' : '打卡'}">${dt ? '✓' : ''}</button>
+        ${reorderMode ? '<button type="button" class="ci-drag" data-sort-handle title="拖动排序" aria-label="拖动排序">☰</button>' : ''}
         <span class="ci-main"><span class="ci-name" title="${esc(it.name)}">${esc(it.name)}</span><span class="ci-brief">连续 ${streak(it.id)} 天 · 累计 ${totalCk(it.id)} 次</span></span>
         <button type="button" class="ci-del" data-del="${it.id}" title="删除">✕</button>
       </div>${detail}</div>`;
   }).join('');
+}
+
+function moveFixedItem(id, targetId) {
+  if (!id || !targetId || id === targetId) return false;
+  const from = S.data.fixed.findIndex((i) => i.id === id);
+  const to = S.data.fixed.findIndex((i) => i.id === targetId);
+  if (from < 0 || to < 0 || from === to) return false;
+  const [item] = S.data.fixed.splice(from, 1);
+  S.data.fixed.splice(to, 0, item);
+  return true;
 }
 
 function toggleAdd(show) {
@@ -97,7 +115,14 @@ export function init() {
     if (e.key === 'Escape') toggleAdd(false);
   });
 
+  $('reorderTog').onclick = () => { reorderMode = !reorderMode; render(); };
+  sorter = bindDragSort({
+    root: $('ciList'), item: '.ci-item', handle: '[data-sort-handle]', ignore: '[data-ck],[data-del]',
+    idOf: (el) => el.dataset.it, move: moveFixedItem, render, save
+  });
+
   $('ciList').onclick = (e) => {
+    if (sorter.suppressClick(e)) return;
     const ck = e.target.closest('[data-ck]');
     const del = e.target.closest('[data-del]');
     if (ck) {
