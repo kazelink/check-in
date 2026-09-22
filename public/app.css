@@ -43,7 +43,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 22px 16px;
+  padding: 28px 20px;
   width: 100%;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
@@ -62,8 +62,8 @@ textarea {
 .grid {
   display: grid;
   width: 100%;
-  max-width: 1000px;
-  gap: 14px;
+  max-width: 1080px;
+  gap: 16px;
   grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
   grid-template-rows: auto auto 1fr;
   grid-template-areas: "plan calendar" "plan checkin" "plan stats";
@@ -72,26 +72,29 @@ textarea {
 
 .card {
   background: var(--card);
-  border-radius: 16px;
-  padding: 18px;
+  border-radius: 8px;
+  padding: 20px;
   box-shadow: var(--shd);
   border: 1px solid var(--line);
   display: flex;
   flex-direction: column;
   width: 100%;
-  position: relative
+  position: relative;
+  min-width: 0
 }
 
 .c-tit {
   font-size: 13px;
   font-weight: 600;
   color: var(--t2);
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  min-height: 28px
+  min-height: 28px;
+  border-bottom: 1px solid var(--line2);
+  padding-bottom: 10px
 }
 
 .icn {
@@ -102,7 +105,7 @@ textarea {
   color: var(--t3);
   font-size: 16px;
   line-height: 1;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -129,7 +132,7 @@ textarea {
   font-weight: 700;
   letter-spacing: .3px;
   padding: 6px 14px;
-  border-radius: 999px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all .2s ease;
   white-space: nowrap
@@ -331,7 +334,8 @@ textarea {
 .pl-view {
   display: flex;
   flex-direction: column;
-  gap: 5px
+  gap: 6px;
+  min-height: 114px
 }
 
 .pv-it {
@@ -339,7 +343,7 @@ textarea {
   align-items: center;
   gap: 10px;
   padding: 9px 12px;
-  border-radius: 10px;
+  border-radius: 6px;
   background: var(--bt);
   border-left: 3px solid var(--bc)
 }
@@ -484,7 +488,7 @@ textarea {
   right: 4px;
   border-left: 3px solid var(--bc);
   background: var(--bt);
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 1px 8px;
   pointer-events: auto;
   overflow: hidden;
@@ -612,7 +616,7 @@ textarea {
   background: var(--card);
   border: 1.5px solid var(--bc);
   border-left-width: 3px;
-  border-radius: 10px;
+  border-radius: 8px;
   box-shadow: 0 10px 30px rgba(16, 20, 30, .14);
   padding: 7px 10px 8px;
   pointer-events: auto;
@@ -740,7 +744,7 @@ textarea {
 /* ---------- 日历 ---------- */
 .a-cal {
   grid-area: calendar;
-  padding: 16px 14px
+  padding: 18px 16px
 }
 
 .cal-ctrl {
@@ -776,8 +780,8 @@ textarea {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: 9px;
-  padding: 3px 0;
+  border-radius: 6px;
+  padding: 5px 0;
   transition: .15s;
   position: relative
 }
@@ -969,7 +973,8 @@ textarea {
 
 .ci-list {
   display: flex;
-  flex-direction: column
+  flex-direction: column;
+  min-height: 54px
 }
 
 .ci-item {
@@ -984,7 +989,7 @@ textarea {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 2px;
+  padding: 10px 2px;
   cursor: pointer
 }
 
@@ -1099,8 +1104,8 @@ textarea {
 
 .ci-detail {
   background: var(--hov);
-  border-radius: 10px;
-  padding: 8px 12px;
+  border-radius: 6px;
+  padding: 9px 12px;
   margin: 0 0 9px 34px
 }
 
@@ -1163,7 +1168,7 @@ textarea {
   padding: 4px 7px;
   color: var(--t2);
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: 6px;
   transition: background .15s
 }
 
@@ -1291,5 +1296,47 @@ textarea {
 
   .pl-act {
     margin-left: auto
+  }
+}
+
+@media (max-width:520px) {
+  .grid {
+    gap: 12px
+  }
+
+  .c-tit {
+    margin-bottom: 12px;
+    padding-bottom: 8px
+  }
+
+  .pl-date,
+  .cal-month {
+    font-size: 14px;
+    margin: 0 3px
+  }
+
+  .pl-act {
+    gap: 5px
+  }
+
+  .chip {
+    padding: 6px 10px
+  }
+
+  .ci-main {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px
+  }
+
+  .ci-brief {
+    font-size: 11px
+  }
+}
+
+@media (hover:none) {
+  .ci-del,
+  .pl-bx {
+    opacity: .82
   }
 }
