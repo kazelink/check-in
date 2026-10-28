@@ -5,6 +5,7 @@ import { signToken } from '../lib/jwt.js';
 import { ensureSchema } from '../lib/schema.js';
 import { respondError } from '../lib/utils.js';
 
+/** @type {import('hono').Hono<AppBindings>} */
 const router = new Hono();
 
 // In-memory rate limiting is acceptable here because the app is personal and

@@ -1,14 +1,15 @@
 import { $, todayStr } from './util.js';
 import { S, R } from './ctx.js';
 import { toast } from './ui.js';
+import { mountIcons } from './icons.js';
 import { hasSession, initLogin, showLogin, onSessionExpired } from './auth.js';
 import { loadLocal, adoptRemote, save, flush, refresh } from './store.js';
-import * as checkin from './checkin.js';
+import * as notes from './notes.js';
 import * as planner from './planner.js';
 import * as calendar from './calendar.js';
 import * as stats from './stats.js';
 
-R.items = checkin.render;
+R.notes = notes.render;
 R.plan = planner.renderPlan;
 R.view = planner.renderView;
 R.cal = calendar.render;
@@ -16,6 +17,8 @@ R.stats = stats.render;
 
 S.selDate = todayStr();
 S.data = loadLocal();
+
+mountIcons();
 
 document.addEventListener('contextmenu', (e) => e.preventDefault());
 
@@ -28,7 +31,7 @@ function startApp() {
   $('appView').style.display = '';
 
   planner.initRange();
-  checkin.init();
+  notes.init();
   planner.init();
   calendar.init();
   stats.init();
@@ -39,7 +42,7 @@ function startApp() {
     btn.classList.add('spin');
     try {
       await refresh();
-      R.items(); R.cal(); R.plan();
+      R.notes(); R.cal(); R.plan();
       toast('已同步最新数据');
     } catch (e) {
       if (!(e && e.unauth)) toast('同步失败，请检查网络');
@@ -48,7 +51,7 @@ function startApp() {
     }
   };
 
-  R.items();
+  R.notes();
   R.cal();
   R.plan();
 
@@ -63,7 +66,7 @@ function startApp() {
     flush();
     if (todayStr() !== curDay) {
       curDay = todayStr();
-      R.items(); R.cal(); R.plan();
+      R.cal(); R.plan();
       return;
     }
     if (S.editMode) planner.updNow();
@@ -76,6 +79,13 @@ function startApp() {
 }
 
 onSessionExpired(() => showLogin('登录已过期，请重新输入密码'));
+
+// 注册 Service Worker：断网仍可打开页面，接口请求不经过缓存
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => { });
+  });
+}
 
 initLogin(async () => {
   if (started) {

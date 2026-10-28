@@ -1,11 +1,14 @@
 import { $ } from './util.js';
 
+/** @type {ReturnType<typeof setTimeout> | undefined} */
+let toastTimer;
+
 export function toast(m) {
   const t = $('toast');
   t.textContent = m;
   t.classList.add('show');
-  clearTimeout(toast._t);
-  toast._t = setTimeout(() => t.classList.remove('show'), 1800);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
 }
 
 // 兜底加载（正常由 app.html 预载）

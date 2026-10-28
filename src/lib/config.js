@@ -5,7 +5,5 @@ export const CONFIG = {
   LOGIN: {
     MAX_ATTEMPTS: 5,
     LOCK_MS: 15 * 60 * 1000
-  },
-  // 整份状态 JSON 的大小上限
-  STATE_MAX_BYTES: 1024 * 1024
+  }
 };

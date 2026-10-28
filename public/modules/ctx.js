@@ -6,8 +6,10 @@ export const S = {
   selDate: null,
   editMode: false,
   typeView: null,
-  expandedId: null,
-  justCk: null,
+  ntOpen: null,      // 展开阅读的笔记 id
+  ntEdit: null,      // 正在编辑的笔记 id
+  ntNew: false,      // 该笔记是否为本轮新建的草稿
+  ntFocusTitle: false,
   edit: null,
   rz: null,
   selecting: false,

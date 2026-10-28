@@ -1,56 +1,196 @@
 import { Hono } from 'hono';
-import { CONFIG } from '../lib/config.js';
 import { authMiddleware } from '../lib/auth.js';
 import { respondError } from '../lib/utils.js';
+import { metaStatements } from '../lib/meta.js';
+import {
+  isNoteId, isDateKey, isPlainObject, toText, toTimestamp,
+  normalizePlanBlock, normalizeMeta, LIMITS
+} from '../lib/validate.js';
 
+/** @type {import('hono').Hono<AppBindings>} */
 const router = new Hono();
 
 router.use('*', authMiddleware);
 
-// 读取整份应用状态；从未保存过时返回 { state: null }
-router.get('/', async (c) => {
-  const row = await c.env.DB
-    .prepare('SELECT data, updated_at FROM app_state WHERE id = 1')
+const DEFAULT_META = { range: { s: 7, e: 23 }, lastT: 'w' };
+
+/** 坏行留档：不阻塞读取，也不会被后续写入覆盖掉 */
+async function archiveCorrupt(env, scope, raw) {
+  try {
+    await env.DB
+      .prepare('INSERT INTO corrupt_rows (scope, raw, created_at) VALUES (?, ?, ?)')
+      .bind(scope, String(raw).slice(0, 200 * 1024), new Date().toISOString())
+      .run();
+  } catch (error) {
+    console.error('archive corrupt row failed:', scope, error);
+  }
+}
+
+/** 读取整份状态；单行解析失败只跳过该行并留档，不让整体降级为 null */
+async function readState(env) {
+  const [notesRes, plansRes, metaRes] = await env.DB.batch([
+    env.DB.prepare(`
+      SELECT id, title, html, updated_at, rev FROM notes
+      WHERE deleted_at IS NULL ORDER BY created_at DESC, id DESC
+    `),
+    env.DB.prepare('SELECT date, payload, rev FROM plans ORDER BY date'),
+    env.DB.prepare('SELECT key, value FROM app_meta')
+  ]);
+
+  const notes = [];
+  const noteRevs = {};
+  for (const row of notesRes.results || []) {
+    notes.push({ id: row.id, t: row.title, h: row.html, u: row.updated_at });
+    noteRevs[row.id] = row.rev;
+  }
+
+  const plans = {};
+  const planRevs = {};
+  for (const row of plansRes.results || []) {
+    if (!isDateKey(row.date)) {
+      await archiveCorrupt(env, `plan-date:${row.date}`, row.payload);
+      continue;
+    }
+    try {
+      const items = JSON.parse(row.payload);
+      if (!Array.isArray(items)) throw new Error('plan payload is not an array');
+      plans[row.date] = items;
+      planRevs[row.date] = row.rev;
+    } catch {
+      await archiveCorrupt(env, `plan:${row.date}`, row.payload);
+    }
+  }
+
+  const meta = { ...DEFAULT_META };
+  for (const row of metaRes.results || []) {
+    try {
+      meta[row.key] = JSON.parse(row.value);
+    } catch {
+      await archiveCorrupt(env, `meta:${row.key}`, row.value);
+    }
+  }
+
+  return {
+    state: { notes, plans, range: meta.range, lastT: meta.lastT },
+    revs: { notes: noteRevs, plans: planRevs }
+  };
+}
+
+router.get('/', async (c) => c.json(await readState(c.env)));
+
+/* ---------------- 笔记 ---------------- */
+
+router.put('/notes/:id', async (c) => {
+  const id = c.req.param('id');
+  if (!isNoteId(id)) return respondError(c, 'Invalid Note Id', 400);
+
+  const body = await c.req.json().catch(() => null);
+  if (!isPlainObject(body)) return respondError(c, 'Invalid Note', 400);
+
+  const title = toText(body.t, LIMITS.noteTitle).trim();
+  const html = toText(body.h, LIMITS.noteHtml);
+  const updatedAt = toTimestamp(body.u);
+
+  const current = await c.env.DB
+    .prepare('SELECT rev FROM notes WHERE id = ?')
+    .bind(id)
     .first();
+  const rev = Number(current?.rev) || 0;
 
-  if (!row) return c.json({ state: null });
-
-  try {
-    return c.json({ state: JSON.parse(row.data), updatedAt: row.updated_at });
-  } catch {
-    // 数据损坏时不让前端崩溃，视为无数据（前端会用本地缓存覆盖回来）
-    return c.json({ state: null });
-  }
-});
-
-// 覆盖保存整份应用状态（个人应用，last-write-wins 足够）
-router.put('/', async (c) => {
-  const raw = await c.req.text();
-
-  if (raw.length > CONFIG.STATE_MAX_BYTES) {
-    return respondError(c, 'State Too Large', 413);
+  // 版本不一致说明别处先写过，把最新版本号回给客户端由它覆盖重试
+  if (body.rev != null && Number(body.rev) !== rev) {
+    return c.json({ error: 'Conflict', rev }, 409);
   }
 
-  let state;
-  try {
-    state = JSON.parse(raw);
-  } catch {
-    return respondError(c, 'Invalid JSON', 400);
-  }
-  if (!state || typeof state !== 'object' || Array.isArray(state)) {
-    return respondError(c, 'Invalid State', 400);
-  }
-
-  const updatedAt = new Date().toISOString();
+  const nextRev = rev + 1;
   await c.env.DB
     .prepare(`
-      INSERT INTO app_state (id, data, updated_at) VALUES (1, ?, ?)
-      ON CONFLICT(id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at
+      INSERT INTO notes (id, title, html, updated_at, created_at, rev, deleted_at)
+      VALUES (?, ?, ?, ?, ?, ?, NULL)
+      ON CONFLICT(id) DO UPDATE SET
+        title = excluded.title,
+        html = excluded.html,
+        updated_at = excluded.updated_at,
+        rev = excluded.rev,
+        deleted_at = NULL
     `)
-    .bind(raw, updatedAt)
+    .bind(id, title, html, updatedAt, updatedAt, nextRev)
     .run();
 
-  return c.json({ success: true, updatedAt });
+  return c.json({ rev: nextRev, u: updatedAt });
+});
+
+// 软删除：保留原始内容，误删仍可从备份里找回
+router.delete('/notes/:id', async (c) => {
+  const id = c.req.param('id');
+  if (!isNoteId(id)) return respondError(c, 'Invalid Note Id', 400);
+
+  await c.env.DB
+    .prepare('UPDATE notes SET deleted_at = ?, rev = rev + 1 WHERE id = ? AND deleted_at IS NULL')
+    .bind(Date.now(), id)
+    .run();
+
+  return c.json({ success: true });
+});
+
+/* ---------------- 日程（按天） ---------------- */
+
+router.put('/plans/:date', async (c) => {
+  const date = c.req.param('date');
+  if (!isDateKey(date)) return respondError(c, 'Invalid Date', 400);
+
+  const body = await c.req.json().catch(() => null);
+  if (!isPlainObject(body) || !Array.isArray(body.items)) {
+    return respondError(c, 'Invalid Plan', 400);
+  }
+
+  const blocks = body.items.map(normalizePlanBlock).filter(Boolean);
+  const payload = JSON.stringify(blocks);
+  const updatedAt = toTimestamp(body.u);
+
+  const current = await c.env.DB
+    .prepare('SELECT rev FROM plans WHERE date = ?')
+    .bind(date)
+    .first();
+  const rev = Number(current?.rev) || 0;
+
+  if (body.rev != null && Number(body.rev) !== rev) {
+    return c.json({ error: 'Conflict', rev }, 409);
+  }
+
+  const nextRev = rev + 1;
+  await c.env.DB
+    .prepare(`
+      INSERT INTO plans (date, payload, updated_at, rev)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(date) DO UPDATE SET
+        payload = excluded.payload,
+        updated_at = excluded.updated_at,
+        rev = excluded.rev
+    `)
+    .bind(date, payload, updatedAt, nextRev)
+    .run();
+
+  return c.json({ rev: nextRev, u: updatedAt });
+});
+
+router.delete('/plans/:date', async (c) => {
+  const date = c.req.param('date');
+  if (!isDateKey(date)) return respondError(c, 'Invalid Date', 400);
+  await c.env.DB.prepare('DELETE FROM plans WHERE date = ?').bind(date).run();
+  return c.json({ success: true });
+});
+
+/* ---------------- 元信息 ---------------- */
+
+router.put('/meta', async (c) => {
+  const body = await c.req.json().catch(() => null);
+  if (!isPlainObject(body)) return respondError(c, 'Invalid Meta', 400);
+
+  const meta = normalizeMeta(body);
+  await c.env.DB.batch(metaStatements(c.env.DB, meta));
+
+  return c.json({ success: true });
 });
 
 export default router;

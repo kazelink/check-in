@@ -1,8 +1,8 @@
-import { $, SH, TYPES, tCls, fmt, todayStr, parseDs, esc, fmtT, genId, dispDate } from './util.js';
+import { $, SH, TYPES, tCls, fmt, todayStr, parseDs, esc, fmtT, genId, dispDate, isCoarsePointer } from './util.js';
 import { S, R } from './ctx.js';
 import { toast, swalConfirm, swalUnsaved } from './ui.js';
-import { save } from './store.js';
-import { isCoarsePointer } from './drag-sort.js';
+import { icon } from './icons.js';
+import { commit } from './store.js';
 
 const dayPlans = () => S.data.plans[S.selDate] || [];
 
@@ -49,6 +49,12 @@ export function setTypeView(k) {
   R.stats();
 }
 
+/** 单条事项；attrs 用来附加 data-tg 之类的属性 */
+function planItemHtml(item, attrs = '') {
+  return `<div class="pv-n${item.d ? ' done' : ''}"${attrs} title="${esc(item.n)}">`
+    + `<i class="pv-ck">${item.d ? icon('check') : ''}</i><span>${esc(item.n)}</span></div>`;
+}
+
 function renderTypeView() {
   const pre = `${S.vD.getFullYear()}-${String(S.vD.getMonth() + 1).padStart(2, '0')}`;
   const days = Object.keys(S.data.plans).filter((k) => k.startsWith(pre)).sort();
@@ -59,8 +65,7 @@ function renderTypeView() {
     html += `<div class="tv-date" data-jump="${ds}">${dispDate(ds, 1)}</div>`;
     html += ps.map((p) => `<div class="pv-it ${tCls(p.t)}" data-jump="${ds}" title="点击查看当天日程">
         <span class="pv-t">${fmtT(p.s)} – ${fmtT(p.e)}</span>
-        <div class="pv-ns">${p.items.map((x) =>
-      `<div class="pv-n${x.d ? ' done' : ''}" title="${esc(x.n)}"><i class="pv-ck">${x.d ? '✓' : ''}</i><span>${esc(x.n)}</span></div>`).join('')}</div>
+        <div class="pv-ns">${p.items.map((x) => planItemHtml(x)).join('')}</div>
       </div>`).join('');
   }
   $('plView').innerHTML = html || '<div class="empty">该月暂无此类型日程</div>';
@@ -78,8 +83,7 @@ export function renderView() {
     const st = isToday && p.s <= nowMin && p.e > nowMin ? ' cur' : '';
     return `<div class="pv-it${st} ${tCls(p.t)}">
       <span class="pv-t">${fmtT(p.s)} – ${fmtT(p.e)}</span>
-      <div class="pv-ns">${p.items.map((x, j) =>
-      `<div class="pv-n${x.d ? ' done' : ''}" data-tg="${p.id}:${j}" title="${esc(x.n)}"><i class="pv-ck">${x.d ? '✓' : ''}</i><span>${esc(x.n)}</span></div>`).join('')}</div>
+      <div class="pv-ns">${p.items.map((x, j) => planItemHtml(x, ` data-tg="${p.id}:${j}"`)).join('')}</div>
       ${st ? '<span class="pv-tag">进行中</span>' : ''}
     </div>`;
   }).join('');
@@ -113,7 +117,7 @@ function renderEdit() {
     return `<div class="pl-blk ${tCls(p.t)}" data-pb="${p.id}" style="top:${top + 1}px;height:${h - 2}px"
       title="${fmtT(p.s)}–${fmtT(p.e)} ${esc(p.items.map((x) => x.n).join('、'))}">
       ${lines}
-      <button type="button" class="pl-bx" data-px="${p.id}" title="删除">✕</button>
+      <button type="button" class="pl-bx" data-px="${p.id}" title="删除">${icon('close')}</button>
       <div class="rz rz-t"></div><div class="rz rz-b"></div>
     </div>`;
   }).join('');
@@ -197,12 +201,14 @@ function saveEditor() {
   if (dirty) toast('已保存');
 }
 
+let settleBusy = false;
+
 function settleEditor() {
   if (!isEditorDirty()) { commitEditor(); return; }
-  if (settleEditor._busy) return;
-  settleEditor._busy = true;
+  if (settleBusy) return;
+  settleBusy = true;
   swalUnsaved().then((r) => {
-    settleEditor._busy = false;
+    settleBusy = false;
     if (r === 'save') saveEditor();
     else if (r === 'discard') discardEditor();
   });
@@ -229,7 +235,7 @@ function buildEditor(items) {
       </span>
       <span class="be-r">
         <span class="be-types">${TYPES.map((t) =>
-    `<button type="button" class="be-dot ${t.cls}" data-t="${t.k}" title="${t.n}">${t.k === S.edit.t ? '✓' : ''}</button>`).join('')}</span>
+    `<button type="button" class="be-dot ${t.cls}" data-t="${t.k}" title="${t.n}">${t.k === S.edit.t ? icon('check') : ''}</button>`).join('')}</span>
         <button type="button" class="be-save">保存</button>
       </span>
     </div><div class="be-lines"></div>`;
@@ -257,25 +263,26 @@ function buildEditor(items) {
   });
 
   d.addEventListener('keydown', (ev) => {
+    const input = /** @type {HTMLInputElement} */ (ev.target);
     if (ev.key === 'Enter') {
       ev.preventDefault();
       const ins = [...d.querySelectorAll('.be-i')];
-      const i = ins.indexOf(ev.target);
+      const i = ins.indexOf(input);
       if (i < 0) return;
-      if (!ev.target.value.trim() && i === ins.length - 1) { saveEditor(); return; }
+      if (!input.value.trim() && i === ins.length - 1) { saveEditor(); return; }
       if (i === ins.length - 1) addLine('', true);
       else ins[i + 1].focus();
     } else if (ev.key === 'Backspace') {
       const ins = [...d.querySelectorAll('.be-i')];
-      const i = ins.indexOf(ev.target);
-      if (i > 0 && ev.target.value === '') {
+      const i = ins.indexOf(input);
+      if (i > 0 && input.value === '') {
         ev.preventDefault();
-        ev.target.closest('.be-line')?.remove();
+        input.closest('.be-line')?.remove();
         ins[i - 1].focus();
       }
     } else if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
       const ins = [...d.querySelectorAll('.be-i')];
-      const i = ins.indexOf(ev.target);
+      const i = ins.indexOf(input);
       if (i < 0) return;
       const j = ev.key === 'ArrowDown' ? i + 1 : i - 1;
       if (ins[j]) { ev.preventDefault(); ins[j].focus(); }
@@ -300,7 +307,7 @@ function buildEditor(items) {
     ev.preventDefault();
     S.edit.t = dot.dataset.t;
     d.className = 'blk-ed ' + tCls(S.edit.t);
-    d.querySelectorAll('.be-dot').forEach((x) => x.textContent = x.dataset.t === S.edit.t ? '✓' : '');
+    d.querySelectorAll('.be-dot').forEach((x) => x.innerHTML = x.dataset.t === S.edit.t ? icon('check') : '');
   });
 
   d.addEventListener('click', (ev) => {
@@ -310,7 +317,7 @@ function buildEditor(items) {
       return;
     }
     if (ev.target.closest('.be-save')) { saveEditor(); return; }
-    if (ev.target === d || ev.target.classList.contains('be-lines')) {
+    if (ev.target === d || (/** @type {Element} */ (ev.target)).classList.contains('be-lines')) {
       const ins = d.querySelectorAll('.be-i');
       if (ins.length) ins[ins.length - 1].focus();
     }
@@ -326,7 +333,7 @@ function addLine(v = '', foc) {
   handle.dataset.lineSort = '1';
   handle.title = '拖动排序';
   handle.setAttribute('aria-label', '拖动排序');
-  handle.textContent = '☰';
+  handle.innerHTML = icon('drag');
   const inp = document.createElement('input');
   inp.type = 'text';
   inp.className = 'be-i';
@@ -389,10 +396,11 @@ function commitEditor() {
       items: texts.map((tx) => ({ n: tx, d: 0 }))
     });
   }
-  S.data.lastT = S.edit.t;
-  S.edit = null;
-  if (el) el.remove();
-  save(); renderEdit(); R.cal();
+  commit(() => {
+    S.data.lastT = S.edit.t;
+    S.edit = null;
+    if (el) el.remove();
+  }, renderEdit, R.cal);
 }
 
 function startRz(id, edge, ev) {
@@ -424,13 +432,18 @@ export function initRange() {
   $('rs').value = S.data.range.s; $('re').value = S.data.range.e;
   const onCh = () => {
     if (S.edit) commitEditor();
-    S.data.range.s = +$('rs').value;
-    S.data.range.e = +$('re').value;
-    if (S.data.range.e <= S.data.range.s) {
-      S.data.range.e = S.data.range.s + 1;
-      $('re').value = S.data.range.e;
-    }
-    save(); S.selecting = false; S.picking = false; S.selA = S.selB = null; S.rz = null; renderPlan();
+    commit(() => {
+      S.data.range.s = +$('rs').value;
+      S.data.range.e = +$('re').value;
+      if (S.data.range.e <= S.data.range.s) {
+        S.data.range.e = S.data.range.s + 1;
+        $('re').value = S.data.range.e;
+      }
+      S.selecting = false;
+      S.picking = false;
+      S.selA = S.selB = null;
+      S.rz = null;
+    }, renderPlan);
   };
   $('rs').onchange = onCh;
   $('re').onchange = onCh;
@@ -445,8 +458,7 @@ export function init() {
     const [pid, idx] = n.dataset.tg.split(':');
     const p = dayPlans().find((q) => q.id === pid);
     if (!p || !p.items[+idx]) return;
-    p.items[+idx].d = p.items[+idx].d ? 0 : 1;
-    save(); renderView(); R.stats();
+    commit(() => { p.items[+idx].d = p.items[+idx].d ? 0 : 1; }, renderView, R.stats);
   };
 
   // 捕获阶段：编辑器外点击先结算（脏则询问并拦截本次点击；点 ✕ 删除例外，不动编辑器）
@@ -498,9 +510,10 @@ export function init() {
       if (!p) return;
       swalConfirm('删除这条日程？', `${fmtT(p.s)}–${fmtT(p.e)} ${p.items.map((q) => q.n).join('、')}`).then((ok) => {
         if (!ok) return;
-        S.data.plans[S.selDate] = dayPlans().filter((q) => q.id !== id);
-        if (!S.data.plans[S.selDate].length) delete S.data.plans[S.selDate];
-        save(); renderEdit(); R.cal();
+        commit(() => {
+          S.data.plans[S.selDate] = dayPlans().filter((q) => q.id !== id);
+          if (!S.data.plans[S.selDate].length) delete S.data.plans[S.selDate];
+        }, renderEdit, R.cal);
       });
       return;
     }
@@ -575,11 +588,12 @@ export function init() {
       updGhost();
       openEditor(null, RS + a * 30, RS + (b + 1) * 30);
     } else if (S.rz) {
-      S.rz.p.s = S.rz.s;
-      S.rz.p.e = S.rz.e;
-      S.rz = null;
-      $('plGhost').style.display = 'none';
-      save(); renderEdit(); R.cal();
+      commit(() => {
+        S.rz.p.s = S.rz.s;
+        S.rz.p.e = S.rz.e;
+        S.rz = null;
+        $('plGhost').style.display = 'none';
+      }, renderEdit, R.cal);
     }
   });
 

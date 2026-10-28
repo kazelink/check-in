@@ -7,23 +7,26 @@ const COOKIE_RE = /(?:^|;\s*)checkin_auth=([^;]*)/;
 // Full auth requires the JWT (X-Auth-Token header or cookie) plus the matching
 // session nonce header. The header fallback keeps sessions working when a
 // browser drops or withholds the cookie.
-export async function authMiddleware(c, next) {
+// allowCookieOnly: 仅用于备份下载这类手工 GET，浏览器地址栏无法附带自定义头。
+export async function authMiddleware(c, next, options = {}) {
   const secret = c.env.JWT_SECRET;
   if (typeof secret !== 'string' || !secret) {
     return respondError(c, 'Server Not Configured', 500);
   }
 
   const headerToken = c.req.header('X-Auth-Token');
-  const token = (headerToken && headerToken.trim()) || parseCookie(c.req.header('Cookie'));
+  const cookieToken = parseCookie(c.req.header('Cookie'));
+  const token = (headerToken && headerToken.trim()) || cookieToken;
   const nonce = c.req.header('X-Session-Nonce');
-  if (!token || !nonce) {
+  const cookieOnly = !headerToken && Boolean(cookieToken) && options.allowCookieOnly === true;
+
+  if (!token || (!nonce && !cookieOnly)) {
     return respondError(c, 'Unauthorized', 401);
   }
 
   const payload = await verifyToken(token, secret);
-  if (!payload || payload.nonce !== nonce) {
-    return respondError(c, 'Unauthorized', 401);
-  }
+  if (!payload) return respondError(c, 'Unauthorized', 401);
+  if (nonce && payload.nonce !== nonce) return respondError(c, 'Unauthorized', 401);
 
   await next();
 

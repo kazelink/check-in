@@ -5,12 +5,16 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "node scripts/deploy-build.mjs"
+    "deploy": "node scripts/deploy-build.mjs",
+    "test": "node --test",
+    "typecheck": "tsc -p jsconfig.json"
   },
   "dependencies": {
-    "hono": "^4.4.0"
+    "hono": "4.13.8"
   },
   "devDependencies": {
-    "wrangler": "^4.45.0"
+    "@types/node": "^22.19.4",
+    "typescript": "5.9.3",
+    "wrangler": "4.136.1"
   }
 }

@@ -1,0 +1,21 @@
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: same-origin
+  X-Frame-Options: DENY
+
+# 入口与模块不设长缓存，避免部署后出现"新 HTML + 旧模块"
+/app.html
+  Cache-Control: no-cache
+
+/app.css
+  Cache-Control: no-cache
+
+/modules/*
+  Cache-Control: no-cache
+
+/sw.js
+  Cache-Control: no-cache
+
+# 第三方库文件名即版本，可长期缓存
+/assets/*
+  Cache-Control: public, max-age=604800

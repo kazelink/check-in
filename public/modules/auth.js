@@ -7,7 +7,7 @@ const REFRESHED_TOKEN_HEADER = 'X-Auth-Token';
 export const hasSession = () =>
   Boolean(localStorage.getItem(TOKEN_KEY) && localStorage.getItem(NONCE_KEY));
 
-export function clearSession() {
+function clearSession() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(NONCE_KEY);
 }
@@ -39,7 +39,7 @@ export function showLogin(msg) {
   requestAnimationFrame(() => $('authInp').focus({ preventScroll: true }));
 }
 
-export function hideLogin() {
+function hideLogin() {
   $('authView').style.display = 'none';
 }
 

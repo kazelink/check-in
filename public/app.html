@@ -4,13 +4,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>CheckIn</title>
+  <title>日程笔记</title>
   <meta name="theme-color" content="#f5f6f8">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="日程笔记">
   <link rel="stylesheet" href="/app.css">
   <script src="/assets/sweetalert2.all.min.js" defer></script>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@latest/lunar.js" defer></script>
+  <script src="/assets/lunar-1.7.7.js" defer></script>
 </head>
 
 <body>
@@ -18,7 +21,7 @@
   <div id="authView" class="auth-wrap" style="display:none">
     <form id="authForm" class="auth-card">
       <div class="auth-logo">📅</div>
-      <div class="auth-tit">CheckIn</div>
+      <div class="auth-tit">日程笔记</div>
       <input type="password" id="authInp" class="auth-inp" autocomplete="current-password">
       <button type="submit" class="auth-btn" id="authBtn">进入</button>
       <div class="auth-msg" id="authMsg"></div>
@@ -30,8 +33,8 @@
     <div class="card a-pl">
       <div class="c-tit">
         <div class="pl-nav">
-          <button type="button" class="icn" id="dPrev" title="前一天">‹</button>
-          <button type="button" class="icn" id="dNext" title="后一天">›</button>
+          <button type="button" class="icn" id="dPrev" data-ic="chevronLeft" title="前一天"></button>
+          <button type="button" class="icn" id="dNext" data-ic="chevronRight" title="后一天"></button>
           <span class="pl-date" id="plDate">--</span>
           <button type="button" class="chip" id="dToday" style="display:none">回到今天</button>
         </div>
@@ -39,7 +42,7 @@
           <span class="pl-range" id="plRangeSel" title="一天的时间范围" style="display:none">
             <select id="rs"></select><span>–</span><select id="re"></select>
           </span>
-          <button type="button" class="chip" id="tvBack" style="display:none">返回</button>
+          <button type="button" class="chip" id="tvBack" style="display:none"><i data-ic="back"></i>返回</button>
           <button type="button" class="chip" id="modeBtn">编辑</button>
         </div>
       </div>
@@ -62,39 +65,33 @@
     <div class="card a-cal">
       <div class="c-tit">
         <div class="cal-ctrl" id="cc">
-          <button type="button" class="icn" data-dir="-1" title="上个月">‹</button>
-          <button type="button" class="icn" data-dir="1" title="下个月">›</button>
+          <button type="button" class="icn" data-dir="-1" data-ic="chevronLeft" title="上个月"></button>
+          <button type="button" class="icn" data-dir="1" data-ic="chevronRight" title="下个月"></button>
           <span class="cal-month" id="cm">--</span>
         </div>
         <span class="pl-act">
-          <button type="button" class="icn sm" id="syncBtn" title="从服务器刷新数据">↻</button>
+          <button type="button" class="icn sm" id="syncBtn" data-ic="refresh" title="从服务器刷新数据"></button>
           <button type="button" class="chip" id="calToday">今天</button>
         </span>
       </div>
       <div class="c-grd" id="cg"></div>
     </div>
 
-    <div class="card a-ci">
+    <div class="card a-nt">
       <div class="c-tit">
-        <span>打卡</span>
-        <span class="ci-sum">
-          <span class="pbar" id="pbar" style="display:none"><i id="pfill"></i></span>
-          <span class="ci-num" id="ciDone"></span>
-          <button type="button" class="icn sm" id="reorderTog" title="拖动排序">☰</button>
-          <button type="button" class="icn" id="addTog" title="添加打卡事项">＋</button>
+        <span>常用笔记</span>
+        <span class="nt-sum">
+          <span class="c-num" id="ntCount"></span>
+          <button type="button" class="icn" id="ntAdd" data-ic="plus" title="新建笔记"></button>
         </span>
       </div>
-      <form id="addForm" class="add-row" style="display:none">
-        <input type="text" id="addInp" class="add-inp" maxlength="40" autocomplete="off">
-        <button type="submit" class="add-btn" title="确定">✓</button>
-      </form>
-      <div class="ci-list" id="ciList"></div>
+      <div class="nt-list" id="ntList"></div>
     </div>
 
     <div class="card a-st">
       <div class="c-tit">
         <span id="stTit">本月统计</span>
-        <span class="ci-num" id="stTot"></span>
+        <span class="c-num" id="stTot"></span>
       </div>
       <div class="st-bar" id="stBar"></div>
       <div id="stList"></div>
