@@ -83,7 +83,7 @@ textarea {
 }
 
 .c-tit {
-  font-size: 13px;
+  font-size: 17px;
   font-weight: 600;
   color: var(--t2);
   margin-bottom: 14px;
@@ -326,7 +326,7 @@ textarea {
 .pl-date {
   color: var(--t1);
   font-weight: 800;
-  font-size: 15px;
+  font-size: 17px;
   margin: 0 6px;
   white-space: nowrap
 }
@@ -814,7 +814,7 @@ textarea {
 .cal-month {
   color: var(--t1);
   font-weight: 800;
-  font-size: 15px;
+  font-size: 17px;
   margin: 0 6px;
   white-space: nowrap
 }
@@ -1491,7 +1491,7 @@ textarea {
 
   .pl-date,
   .cal-month {
-    font-size: 14px;
+    font-size: 17px;
     margin: 0 3px
   }
 
