@@ -1,5 +1,3 @@
-// 本地缓存立即写入 + 云端增量同步。
-// 同步粒度：笔记按条、日程按天、元信息整体；不再整份状态覆盖写。
 
 import { S } from './ctx.js';
 import { authedFetch, hasSession } from './auth.js';
@@ -18,20 +16,18 @@ export function emptyState() {
   return { notes: [], plans: {}, range: { s: 7, e: 23 }, lastT: 'w' };
 }
 
-/** 把服务端/本地缓存的任意形状收敛成当前 schema，脏数据直接丢弃 */
 export function normalize(d) {
   if (!d || typeof d !== 'object') return emptyState();
 
   const plans = {};
   for (const k in (d.plans || {})) {
     const arr = (d.plans[k] || []).map((p) => ({
-      // 缺 id 的块（早期数据/手工导入）补一个，否则点不动也删不掉
       id: p.id || genId('p'),
       s: p.s,
       e: p.e,
       t: p.t || 'w',
-      items: (p.items || (p.name ? [p.name] : []))
-        .map((x) => typeof x === 'string' ? { n: x, d: 0 } : { n: x.n || '', d: x.d ? 1 : 0 })
+      items: (p.items || [])
+        .map((x) => ({ n: x.n || '', d: x.d ? 1 : 0 }))
         .filter((x) => x.n)
     })).filter((p) => p.items.length);
     if (arr.length) plans[k] = arr;
@@ -71,9 +67,6 @@ function saveLocal() {
   } catch { }
 }
 
-/* ---------------- 同步基线 ---------------- */
-
-/** 已同步内容的指纹，用来算差异：id → { sig, rev } */
 let baseNotes = new Map();
 let basePlans = new Map();
 let metaSig = '';
@@ -98,7 +91,6 @@ function resetBase(revs) {
   metaSig = metaSignature();
 }
 
-/** 对比当前数据与基线，得到最小写集合 */
 function diffOps() {
   const ops = [];
   const notes = S.data.notes || [];
@@ -133,7 +125,6 @@ function diffOps() {
   return ops;
 }
 
-/** 带版本号的写：409 时用服务端最新 rev 重试一次（同一条笔记以最后一次编辑为准） */
 async function putJSON(url, payload, retried = false) {
   const res = await authedFetch(url, {
     method: 'PUT',
@@ -199,9 +190,8 @@ export function save() {
 }
 
 /**
- * 统一写入入口：修改数据 → 落本地并排队同步 → 执行重绘
- * @param {() => void} mutate 数据修改
- * @param {...(() => void)} renders 需要重绘的区域
+ * @param {() => void} mutate
+ * @param {...(() => void)} renders
  */
 export function commit(mutate, ...renders) {
   mutate();
@@ -209,7 +199,6 @@ export function commit(mutate, ...renders) {
   for (const render of renders) render();
 }
 
-/** 推送尚未同步的差异；失败不重试，等下一次 save/定时器再试，避免离线时反复请求 */
 export async function flush() {
   if (!hasSession()) return;
   if (syncing) { flushAgain = true; return; }
@@ -235,7 +224,6 @@ export async function flush() {
 
   if (failedStatus && failedStatus !== 401) toast('同步失败，已本地保存');
 
-  // 同步期间又有新改动时补一次，避免这次编辑被跳过
   if (flushAgain) {
     flushAgain = false;
     clearTimeout(timer);
@@ -258,7 +246,6 @@ function applyRemote(remote) {
   resetBase(remote.revs);
 }
 
-// 远端有数据用远端；远端为空且本地有数据则把本地推上去（离线编辑后的回填）
 export async function adoptRemote() {
   const remote = await fetchRemote();
   if (remote?.state && (hasContent(remote.state) || !hasContent(S.data))) {

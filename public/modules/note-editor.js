@@ -1,5 +1,3 @@
-// 笔记就地编辑器：Squire 实例、工具栏命令、草稿快照
-// 只负责"编辑这一块"，列表与状态由 notes.js 管理
 
 import Squire from '../assets/squire.mjs';
 import { icon } from './icons.js';
@@ -42,19 +40,17 @@ function fragmentOf(html) {
 function editorHtml() {
   const btns = TOOLBAR.map((t) => t.sep
     ? '<span class="nt-sep"></span>'
-    : `<button type="button" class="nt-tb-btn" data-cmd="${t.cmd}" title="${t.tip}" tabindex="-1">${icon(t.ic)}</button>`
+    : `<button type="button" class="nt-tb-btn" data-cmd="${t.cmd}" aria-label="${t.tip}" tabindex="-1">${icon(t.ic)}</button>`
   ).join('');
 
   return `<div class="nt-tb">${btns}</div><div class="nt-area"></div>`;
 }
 
-/** 当前正文（空内容统一成空串） */
 function draftHtml() {
   const raw = sq ? sq.getHTML() : '';
   return isBlank(raw) ? '' : sanitize(raw);
 }
 
-/** 读取当前草稿：标题 + 正文 */
 export function draft(item) {
   const t = (item?.querySelector('.nt-title')?.value || '').trim();
   return { t, h: draftHtml() };
@@ -73,9 +69,8 @@ export function reset() {
 }
 
 /**
- * 在指定笔记条目里挂载编辑器
- * @param {HTMLElement} item 笔记条目
- * @param {{ t?: string, h?: string }} note 笔记数据
+ * @param {HTMLElement} item
+ * @param {{ t?: string, h?: string }} note
  * @param {{ onSave: () => void, onLeave: () => void, focusTitle?: boolean }} handlers
  */
 export function mount(item, note, handlers) {
@@ -120,8 +115,6 @@ export function mount(item, note, handlers) {
     area.focus({ preventScroll: true });
   }
 }
-
-/* ---------------- 选区与命令 ---------------- */
 
 function ensureSelection() {
   if (!sq) return;

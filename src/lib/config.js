@@ -1,5 +1,4 @@
 export const CONFIG = {
-  // 会话有效期：2 天；活跃使用时自动滑动续期
   JWT_EXP: 2 * 86400,
   JWT_REFRESH_THRESHOLD: 1 * 86400,
   LOGIN: {

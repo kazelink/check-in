@@ -114,8 +114,6 @@ function findD1(dbName) {
   return list?.find((item) => item.name === dbName) || null;
 }
 
-// Reuse the existing D1 database by name, creating it on first deploy, so the
-// database_id never has to be committed to the repo.
 function ensureD1(dbName) {
   let db = findD1(dbName);
   if (!db) {
@@ -129,10 +127,6 @@ function ensureD1(dbName) {
   return { databaseName: db.name, databaseId: db.uuid };
 }
 
-// Insert missing fields into the [[block]] that declares our binding.
-// Line-based on purpose: existing keys anywhere in the block (before or after
-// the binding line) must be detected, otherwise we would duplicate them and
-// produce invalid TOML.
 function injectBindingFields(rawConfig, blockName, bindingName, extraLines) {
   if (!extraLines.length) return rawConfig;
 

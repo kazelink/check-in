@@ -7,7 +7,6 @@ import { isNoteId, isDateKey, isPlainObject, toText, toTimestamp, normalizePlanB
 /** @type {import('hono').Hono<AppBindings>} */
 const router = new Hono();
 
-// 备份/恢复是低频手工操作，允许仅凭登录 Cookie 访问，方便直接在浏览器里下载。
 router.use('*', (c, next) => authMiddleware(c, next, { allowCookieOnly: true }));
 
 const SELECT_ALL = [
@@ -64,7 +63,6 @@ router.get('/', async (c) => {
   return c.body(JSON.stringify(body, null, 2));
 });
 
-// 整库覆盖式恢复：必须显式带上 confirm: "replace"
 router.post('/restore', async (c) => {
   const raw = await c.req.text();
   if (raw.length > LIMITS.restoreBytes) return respondError(c, 'Payload Too Large', 413);

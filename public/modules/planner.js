@@ -6,7 +6,7 @@ import { commit } from './store.js';
 
 const dayPlans = () => S.data.plans[S.selDate] || [];
 
-let blkTap = null;   // 块上的按下点：抬起未位移才算点按打开，滑动滚屏不误触
+let blkTap = null;
 let lineSort = null;
 let lineSortSuppressUntil = 0;
 
@@ -49,9 +49,8 @@ export function setTypeView(k) {
   R.stats();
 }
 
-/** 单条事项；attrs 用来附加 data-tg 之类的属性 */
 function planItemHtml(item, attrs = '') {
-  return `<div class="pv-n${item.d ? ' done' : ''}"${attrs} title="${esc(item.n)}">`
+  return `<div class="pv-n${item.d ? ' done' : ''}"${attrs}>`
     + `<i class="pv-ck">${item.d ? icon('check') : ''}</i><span>${esc(item.n)}</span></div>`;
 }
 
@@ -63,7 +62,7 @@ function renderTypeView() {
     const ps = S.data.plans[ds].filter((p) => p.t === S.typeView).sort((a, b) => a.s - b.s);
     if (!ps.length) continue;
     html += `<div class="tv-date" data-jump="${ds}">${dispDate(ds, 1)}</div>`;
-    html += ps.map((p) => `<div class="pv-it ${tCls(p.t)}" data-jump="${ds}" title="点击查看当天日程">
+    html += ps.map((p) => `<div class="pv-it ${tCls(p.t)}" data-jump="${ds}">
         <span class="pv-t">${fmtT(p.s)} – ${fmtT(p.e)}</span>
         <div class="pv-ns">${p.items.map((x) => planItemHtml(x)).join('')}</div>
       </div>`).join('');
@@ -114,10 +113,9 @@ function renderEdit() {
     const timeTxt = `${fmtT(p.s)}–${fmtT(p.e)}` + (p.items.length > 1 ? ` · ${p.items.length}项` : '');
     const lines = p.items.map((x, j) =>
       `<div class="blk-ln"><span class="${x.d ? 'dn' : ''}">${esc(x.n)}</span>${j === 0 ? `<i>${timeTxt}</i>` : ''}</div>`).join('');
-    return `<div class="pl-blk ${tCls(p.t)}" data-pb="${p.id}" style="top:${top + 1}px;height:${h - 2}px"
-      title="${fmtT(p.s)}–${fmtT(p.e)} ${esc(p.items.map((x) => x.n).join('、'))}">
+    return `<div class="pl-blk ${tCls(p.t)}" data-pb="${p.id}" style="top:${top + 1}px;height:${h - 2}px">
       ${lines}
-      <button type="button" class="pl-bx" data-px="${p.id}" title="删除">${icon('close')}</button>
+      <button type="button" class="pl-bx" data-px="${p.id}" aria-label="删除">${icon('close')}</button>
       <div class="rz rz-t"></div><div class="rz rz-b"></div>
     </div>`;
   }).join('');
@@ -235,7 +233,7 @@ function buildEditor(items) {
       </span>
       <span class="be-r">
         <span class="be-types">${TYPES.map((t) =>
-    `<button type="button" class="be-dot ${t.cls}" data-t="${t.k}" title="${t.n}">${t.k === S.edit.t ? icon('check') : ''}</button>`).join('')}</span>
+    `<button type="button" class="be-dot ${t.cls}" data-t="${t.k}" aria-label="${t.n}">${t.k === S.edit.t ? icon('check') : ''}</button>`).join('')}</span>
         <button type="button" class="be-save">保存</button>
       </span>
     </div><div class="be-lines"></div>`;
@@ -331,7 +329,6 @@ function addLine(v = '', foc) {
   handle.type = 'button';
   handle.className = 'be-drag';
   handle.dataset.lineSort = '1';
-  handle.title = '拖动排序';
   handle.setAttribute('aria-label', '拖动排序');
   handle.innerHTML = icon('drag');
   const inp = document.createElement('input');
@@ -379,7 +376,7 @@ function commitEditor() {
     if (p) {
       if (texts.length) {
         const old = p.items;
-        p.items = texts.map((tx) => {   // 同名事项保留完成标记
+        p.items = texts.map((tx) => {
           const m = old.find((o) => o.n === tx);
           return { n: tx, d: m ? m.d : 0 };
         });
@@ -461,7 +458,6 @@ export function init() {
     commit(() => { p.items[+idx].d = p.items[+idx].d ? 0 : 1; }, renderView, R.stats);
   };
 
-  // 捕获阶段：编辑器外点击先结算（脏则询问并拦截本次点击；点 ✕ 删除例外，不动编辑器）
   document.addEventListener('pointerdown', (e) => {
     if (e.target.closest('.swal2-container')) return;
     if (S.edit && !e.target.closest('#blkEd') && !e.target.closest('[data-px]')) {
@@ -476,7 +472,6 @@ export function init() {
     if (S.picking && !e.target.closest('.pl-cell') && !e.target.closest('#plBlocks')) cancelPick();
   }, true);
 
-  // 空白时间轴：按下即开始选段（滑动实时扩展），原地抬起转为两击模式等待终点
   $('plRows').onpointerdown = (e) => {
     if (S.selecting || S.rz) return;
     const c = e.target.closest('.pl-cell');

@@ -17,7 +17,6 @@ export function render() {
     S.data.plans[k].forEach((p) => {
       const done = p.items.filter((x) => x.d).length;
       if (!done) return;
-      // 按已完成比例折算时长
       sums[p.t] = (sums[p.t] || 0) + (p.e - p.s) * done / p.items.length;
     });
   }
@@ -35,7 +34,7 @@ export function render() {
   $('stBar').style.display = 'flex';
   $('stBar').classList.toggle('filt', Boolean(sel));
   $('stBar').innerHTML = TYPES.filter((t) => sums[t.k]).map((t) =>
-    `<i class="${t.cls}${t.k === sel ? ' on' : ''}" data-t="${t.k}" title="${t.n}" style="width:${sums[t.k] / tot * 100}%"></i>`).join('');
+    `<i class="${t.cls}${t.k === sel ? ' on' : ''}" data-t="${t.k}" aria-label="${t.n}" style="width:${sums[t.k] / tot * 100}%"></i>`).join('');
   $('stList').innerHTML = TYPES.filter((t) => sums[t.k]).map((t) =>
     `<div class="st-row ${t.cls}${t.k === sel ? ' on' : ''}" data-t="${t.k}">
       <span class="st-dot"></span>

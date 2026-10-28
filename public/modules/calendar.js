@@ -25,7 +25,7 @@ function mkCell(y, m, d, isOth, isT) {
           }
         }
       }
-    } catch { /* 农历库异常时退化为普通日历 */ }
+    } catch {  }
   }
 
   if (isRest) {
@@ -69,7 +69,7 @@ export function init() {
     if (dir) {
       S.vD.setMonth(S.vD.getMonth() + parseInt(dir));
       render();
-      if (S.typeView) R.plan();   // 类型汇总视图跟随翻月
+      if (S.typeView) R.plan();
     }
   };
   $('calToday').onclick = () => gotoDate(todayStr());

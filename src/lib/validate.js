@@ -1,4 +1,3 @@
-// 请求体校验：纯函数，便于单元测试与后续复用。
 
 export const LIMITS = {
   noteTitle: 200,
@@ -23,12 +22,10 @@ export function toText(value, max) {
 export function toTimestamp(value) {
   const n = Number(value);
   if (!Number.isFinite(n) || n <= 0) return Date.now();
-  // 必须落在 2001-01-01 到 2100-01-01 之间，挡住明显异常的客户端时钟
   if (n < 978307200000 || n > 4102444800000) return Date.now();
   return Math.trunc(n);
 }
 
-/** 日程条目：只保留 n / d 两个字段，非法条目丢弃 */
 export function normalizePlanItems(items) {
   if (!Array.isArray(items)) return null;
   const out = [];
@@ -41,7 +38,6 @@ export function normalizePlanItems(items) {
   return out;
 }
 
-/** 日程块：类型必须是已知的五个之一，时间戳取 30 分钟对齐的分钟数 */
 export function normalizePlanBlock(block) {
   if (!isPlainObject(block)) return null;
   const s = Number(block.s);
@@ -54,7 +50,6 @@ export function normalizePlanBlock(block) {
   return { id: toText(block.id, 40) || undefined, s, e, t: type, items };
 }
 
-/** 元信息：时间范围必须落在 0-24 且 e > s */
 export function normalizeMeta(body) {
   const range = body?.range;
   const s = Number(range?.s);

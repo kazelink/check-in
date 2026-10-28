@@ -17,7 +17,6 @@ export function onSessionExpired(cb) {
   expiredCb = cb;
 }
 
-// 401 时清会话并通知上层重新登录
 export async function authedFetch(url, opts = {}) {
   const headers = new Headers(opts.headers || {});
   headers.set('X-Auth-Token', localStorage.getItem(TOKEN_KEY) || '');
@@ -35,7 +34,7 @@ export async function authedFetch(url, opts = {}) {
 
 export function showLogin(msg) {
   $('authView').style.display = 'flex';
-  if (msg !== undefined) $('authMsg').textContent = msg;   // 不传参则保留已有提示
+  if (msg !== undefined) $('authMsg').textContent = msg;
   requestAnimationFrame(() => $('authInp').focus({ preventScroll: true }));
 }
 

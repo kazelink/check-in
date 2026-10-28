@@ -1,4 +1,3 @@
-// 常用笔记：列表渲染与交互；富文本编辑在 note-editor.js，内容清洗在 note-format.js
 
 import { $, esc, genId } from './util.js';
 import { S } from './ctx.js';
@@ -8,7 +7,7 @@ import { icon } from './icons.js';
 import { sanitize, titleOf, timeText } from './note-format.js';
 import * as editor from './note-editor.js';
 
-let leaveBusy = false; // 未保存确认弹窗打开期间，避免重复触发
+let leaveBusy = false;
 
 const noteById = (id) => (S.data.notes || []).find((n) => n.id === id);
 
@@ -16,16 +15,14 @@ const editItem = () => (S.ntEdit
   ? $('ntList')?.querySelector(`.nt-item[data-nt="${CSS.escape(S.ntEdit)}"]`)
   : null);
 
-/* ---------------- 列表 ---------------- */
-
 function itemHtml(n) {
   const editing = n.id === S.ntEdit;
   const open = editing || n.id === S.ntOpen;
   const acts = editing
     ? '<button type="button" class="nt-btn" data-cancel>取消</button>'
       + '<button type="button" class="nt-btn primary" data-save>保存</button>'
-    : `<button type="button" class="nt-btn icon" data-edit title="编辑" aria-label="编辑">${icon('edit')}</button>`
-      + `<button type="button" class="nt-btn icon del" data-del title="删除" aria-label="删除">${icon('trash')}</button>`;
+    : `<button type="button" class="nt-btn icon" data-edit aria-label="编辑">${icon('edit')}</button>`
+      + `<button type="button" class="nt-btn icon del" data-del aria-label="删除">${icon('trash')}</button>`;
 
   const head = editing
     ? `<div class="nt-hd edit">
@@ -33,7 +30,7 @@ function itemHtml(n) {
       <span class="nt-acts">${acts}</span>
     </div>`
     : `<div class="nt-hd">
-      <span class="nt-t" title="${esc(titleOf(n))}">${esc(titleOf(n))}</span>
+      <span class="nt-t">${esc(titleOf(n))}</span>
       <span class="nt-d">${esc(timeText(n.u))}</span>
       <span class="nt-acts">${acts}</span>
     </div>`;
@@ -53,9 +50,6 @@ export function render() {
   if (!box) return;
 
   const list = S.data.notes || [];
-  $('ntCount').textContent = list.length ? `${list.length} 条` : '';
-
-  // 正在编辑且有未保存内容时（如点同步触发的重绘）不重建 DOM，避免吞掉草稿
   if (S.ntEdit && editor.isActive() && editor.isDirty(editItem())) return;
 
   editor.reset();
@@ -81,8 +75,6 @@ function mountEditor() {
   S.ntFocusTitle = false;
   editor.mount(item, note, { onSave: saveEditor, onLeave: leaveEditor, focusTitle });
 }
-
-/* ---------------- 编辑态进出 ---------------- */
 
 function isDirty() {
   return editor.isDirty(editItem());
@@ -113,7 +105,6 @@ function saveEditor() {
   }
 
   commit(() => {
-    // 同步可能已用远端数据整体替换 S.data，草稿对象不在数组里时补回去
     let note = noteById(S.ntEdit);
     if (!note) {
       note = { id: S.ntEdit, t: '', h: '', u: 0 };
@@ -156,8 +147,6 @@ async function leaveEditor() {
     leaveBusy = false;
   }
 }
-
-/* ---------------- 交互 ---------------- */
 
 async function createNote() {
   if (!(await leaveEditor())) return;
@@ -207,8 +196,8 @@ export function init() {
     if (e.target.closest('[data-cancel]')) { await leaveEditor(); return; }
     if (e.target.closest('[data-edit]')) { startEdit(id); return; }
     if (e.target.closest('[data-del]')) { removeNote(id); return; }
-    if (!e.target.closest('.nt-hd')) return;      // 正文/编辑器内部点击不折叠
-    if (S.ntEdit === id) return;                   // 正在编辑时不折叠
+    if (!e.target.closest('.nt-hd')) return;
+    if (S.ntEdit === id) return;
 
     if (!(await leaveEditor())) return;
     S.ntOpen = S.ntOpen === id ? null : id;

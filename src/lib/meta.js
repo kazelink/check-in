@@ -1,4 +1,3 @@
-// 元信息（时间范围 / 上次使用的日程类型）的写入语句，供状态接口与恢复接口共用
 
 const UPSERT = `
   INSERT INTO app_meta (key, value, updated_at) VALUES (?, ?, ?)
@@ -6,7 +5,7 @@ const UPSERT = `
 `;
 
 /**
- * @param {any} db D1 绑定
+ * @param {any} db
  * @param {{ range: { s: number, e: number }, lastT: string }} meta
  * @param {number} [now]
  */

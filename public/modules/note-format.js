@@ -1,11 +1,9 @@
-// 笔记内容的清洗与展示辅助（无状态，便于复用与测试）
 
 const ALLOWED_TAGS = new Set([
   'P', 'DIV', 'BR', 'B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'DEL',
   'H1', 'H2', 'H3', 'UL', 'OL', 'LI', 'BLOCKQUOTE', 'A', 'HR', 'SPAN'
 ]);
 
-// 媒体、表单、表格等一并丢弃，避免粘贴内容把排版和体积带崩
 const DROP_TAGS = new Set([
   'SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'IMG', 'VIDEO', 'AUDIO', 'SOURCE',
   'TRACK', 'LINK', 'META', 'FORM', 'INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'SVG',
@@ -14,7 +12,6 @@ const DROP_TAGS = new Set([
 
 const SAFE_HREF = /^(https?:|mailto:)/i;
 
-/** 只保留白名单标签与安全链接，其余属性/脚本一律去掉 */
 export function sanitize(html) {
   const src = String(html == null ? '' : html);
   if (!src) return '';
@@ -44,14 +41,12 @@ function plainText(html) {
   return doc.body.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-/** 列表里显示的标题：优先用标题字段，否则取正文首段 */
 export function titleOf(note) {
   if (note.t) return note.t;
   const text = plainText(note.h);
   return text ? (text.length > 24 ? text.slice(0, 24) + '…' : text) : '未命名笔记';
 }
 
-/** 相对当前时间的时间戳文案 */
 export function timeText(ts) {
   if (!ts) return '';
   const d = new Date(ts);

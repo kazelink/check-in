@@ -1,4 +1,3 @@
-// service worker：静态资源可离线打开，接口请求永不缓存
 const VERSION = 'v1';
 const SHELL_CACHE = `shell-${VERSION}`;
 const ASSET_CACHE = `assets-${VERSION}`;
@@ -51,10 +50,8 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
-  // 接口与备份永远走网络，不参与缓存
   if (url.pathname.startsWith('/api/')) return;
 
-  // 导航请求：网络优先，断网时回退缓存的页面壳
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
@@ -68,7 +65,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 第三方库：先用缓存，后台静默更新
   if (url.pathname.startsWith('/assets/')) {
     event.respondWith(
       caches.match(request).then((cached) => {
@@ -87,7 +83,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 应用代码与样式：网络优先，保证部署后立即生效；断网回退缓存
   event.respondWith(
     fetch(request)
       .then((response) => {

@@ -14,7 +14,6 @@ router.use('*', authMiddleware);
 
 const DEFAULT_META = { range: { s: 7, e: 23 }, lastT: 'w' };
 
-/** 坏行留档：不阻塞读取，也不会被后续写入覆盖掉 */
 async function archiveCorrupt(env, scope, raw) {
   try {
     await env.DB
@@ -26,7 +25,6 @@ async function archiveCorrupt(env, scope, raw) {
   }
 }
 
-/** 读取整份状态；单行解析失败只跳过该行并留档，不让整体降级为 null */
 async function readState(env) {
   const [notesRes, plansRes, metaRes] = await env.DB.batch([
     env.DB.prepare(`
@@ -78,8 +76,6 @@ async function readState(env) {
 
 router.get('/', async (c) => c.json(await readState(c.env)));
 
-/* ---------------- 笔记 ---------------- */
-
 router.put('/notes/:id', async (c) => {
   const id = c.req.param('id');
   if (!isNoteId(id)) return respondError(c, 'Invalid Note Id', 400);
@@ -97,7 +93,6 @@ router.put('/notes/:id', async (c) => {
     .first();
   const rev = Number(current?.rev) || 0;
 
-  // 版本不一致说明别处先写过，把最新版本号回给客户端由它覆盖重试
   if (body.rev != null && Number(body.rev) !== rev) {
     return c.json({ error: 'Conflict', rev }, 409);
   }
@@ -120,7 +115,6 @@ router.put('/notes/:id', async (c) => {
   return c.json({ rev: nextRev, u: updatedAt });
 });
 
-// 软删除：保留原始内容，误删仍可从备份里找回
 router.delete('/notes/:id', async (c) => {
   const id = c.req.param('id');
   if (!isNoteId(id)) return respondError(c, 'Invalid Note Id', 400);
@@ -132,8 +126,6 @@ router.delete('/notes/:id', async (c) => {
 
   return c.json({ success: true });
 });
-
-/* ---------------- 日程（按天） ---------------- */
 
 router.put('/plans/:date', async (c) => {
   const date = c.req.param('date');
@@ -180,8 +172,6 @@ router.delete('/plans/:date', async (c) => {
   await c.env.DB.prepare('DELETE FROM plans WHERE date = ?').bind(date).run();
   return c.json({ success: true });
 });
-
-/* ---------------- 元信息 ---------------- */
 
 router.put('/meta', async (c) => {
   const body = await c.req.json().catch(() => null);

@@ -23,16 +23,6 @@ test('笔记保留标题与正文，丢弃空条目和脏 id', () => {
   ]);
 });
 
-test('日程兼容早期的字符串事项写法', () => {
-  const state = normalize({
-    plans: { '2026-10-28': [{ id: 'p1', s: 540, e: 600, t: 's', items: ['写周报', { n: '核对数据', d: 1 }] }] }
-  });
-  assert.deepEqual(state.plans['2026-10-28'][0].items, [
-    { n: '写周报', d: 0 },
-    { n: '核对数据', d: 1 }
-  ]);
-});
-
 test('缺 id 的日程块补 id，空块被丢弃', () => {
   const state = normalize({
     plans: { '2026-10-28': [{ s: 540, e: 600, items: [{ n: '写周报' }] }, { s: 600, e: 660, items: [] }] }

@@ -54,7 +54,6 @@ export async function verifyToken(token, secret) {
     if (parts.length !== 3) return false;
     const [header, payload, sig] = parts;
 
-    // Validate header: only accept HS256
     const h = JSON.parse(base64urlDecode(header));
     if (h.alg !== 'HS256') return false;
 

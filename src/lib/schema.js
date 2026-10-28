@@ -1,5 +1,3 @@
-// 数据表结构：笔记按条、日程按天、元信息按键，避免整份状态单行读写。
-// 建表语句为幂等 DDL，冷启动时批量执行一次。
 
 const STATEMENTS = [
   `CREATE TABLE IF NOT EXISTS notes (
@@ -22,7 +20,6 @@ const STATEMENTS = [
     value TEXT NOT NULL,
     updated_at INTEGER NOT NULL
   )`,
-  // 解析失败的行原样留档，避免"坏一条、丢全部"
   `CREATE TABLE IF NOT EXISTS corrupt_rows (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     scope TEXT NOT NULL,

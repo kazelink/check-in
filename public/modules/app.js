@@ -55,7 +55,6 @@ function startApp() {
   R.cal();
   R.plan();
 
-  // 农历库 defer 加载完成后补一次日历渲染
   const lp = setInterval(() => {
     if (window.Lunar) { clearInterval(lp); R.cal(); }
   }, 200);
@@ -80,7 +79,6 @@ function startApp() {
 
 onSessionExpired(() => showLogin('登录已过期，请重新输入密码'));
 
-// 注册 Service Worker：断网仍可打开页面，接口请求不经过缓存
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => { });

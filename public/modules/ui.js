@@ -11,23 +11,10 @@ export function toast(m) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
 }
 
-// 兜底加载（正常由 app.html 预载）
-function ensureSwal() {
-  if (typeof Swal !== 'undefined') return Promise.resolve();
-  return new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = '/assets/sweetalert2.all.min.js';
-    s.onload = resolve;
-    s.onerror = reject;
-    document.head.appendChild(s);
-  });
-}
-
 const BASE = { scrollbarPadding: false, heightAuto: false, allowOutsideClick: false };
 
 export async function swalConfirm(title, text) {
   try {
-    await ensureSwal();
     const r = await Swal.fire({
       ...BASE,
       title,
@@ -45,10 +32,8 @@ export async function swalConfirm(title, text) {
   }
 }
 
-// 返回 'save' | 'discard' | 'cancel'
 export async function swalUnsaved() {
   try {
-    await ensureSwal();
     const r = await Swal.fire({
       ...BASE,
       title: '有未保存的修改',

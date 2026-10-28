@@ -4,10 +4,6 @@ import { respondError } from './utils.js';
 
 const COOKIE_RE = /(?:^|;\s*)checkin_auth=([^;]*)/;
 
-// Full auth requires the JWT (X-Auth-Token header or cookie) plus the matching
-// session nonce header. The header fallback keeps sessions working when a
-// browser drops or withholds the cookie.
-// allowCookieOnly: 仅用于备份下载这类手工 GET，浏览器地址栏无法附带自定义头。
 export async function authMiddleware(c, next, options = {}) {
   const secret = c.env.JWT_SECRET;
   if (typeof secret !== 'string' || !secret) {

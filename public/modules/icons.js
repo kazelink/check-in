@@ -1,4 +1,3 @@
-// 图标：Remix Icon（与 enote 同一套字形），24×24 视图框，颜色继承 currentColor
 
 const PATHS = {
   chevronLeft: 'M10.8284 12.0007L15.7782 16.9504L14.364 18.3646L8 12.0007L14.364 5.63672L15.7782 7.05093L10.8284 12.0007Z',
@@ -31,7 +30,6 @@ export function icon(name, cls = 'ic') {
   return `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
 }
 
-// 把 HTML 中带 data-ic 的占位元素填成图标
 export function mountIcons(root = document) {
   root.querySelectorAll('[data-ic]').forEach((el) => {
     const svg = icon(el.dataset.ic);

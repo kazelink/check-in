@@ -14,7 +14,6 @@ app.use('/api/*', async (c, next) => {
     await ensureSchema(c.env);
   }
   await next();
-  // API responses are dynamic and authenticated — never cacheable.
   if (!c.res.headers.has('Cache-Control')) {
     c.res.headers.set('Cache-Control', 'no-store');
   }

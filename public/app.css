@@ -96,7 +96,6 @@ textarea {
   padding-bottom: 10px
 }
 
-/* ---------- 图标（Remix Icon 字形，与 enote 一致） ---------- */
 .ic {
   display: block;
   width: 16px;
@@ -128,7 +127,25 @@ textarea {
 }
 
 .icn.on { color: var(--acc); background: var(--acc-t) }
-.icn.spin { animation: spin .8s linear infinite; pointer-events: none }
+
+.icn.spin {
+  pointer-events: none
+}
+
+.icn.spin .ic {
+  display: none
+}
+
+.icn.spin::after {
+  content: "";
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid rgba(78, 110, 242, .25);
+  border-top-color: var(--acc);
+  animation: spin .7s linear infinite
+}
+
 @keyframes spin { to { transform: rotate(360deg) } }
 
 .icn.sm .ic {
@@ -177,7 +194,6 @@ textarea {
   box-shadow: 0 4px 10px rgba(78, 110, 242, .3)
 }
 
-/* 类型颜色：工作蓝 / 学习橙 / 运动红 / 生活绿 / 娱乐紫 */
 .tw {
   --bc: #3e7bfa;
   --bt: rgba(62, 123, 250, .11)
@@ -203,7 +219,6 @@ textarea {
   --bt: rgba(168, 85, 247, .11)
 }
 
-/* ---------- 登录 ---------- */
 .auth-wrap {
   position: fixed;
   inset: 0;
@@ -293,7 +308,6 @@ textarea {
   text-align: center
 }
 
-/* ---------- 日程计划 ---------- */
 .a-pl {
   grid-area: plan
 }
@@ -350,7 +364,6 @@ textarea {
   margin-bottom: 6px
 }
 
-/* 展示模式 */
 .pl-view {
   display: flex;
   flex-direction: column;
@@ -446,7 +459,6 @@ textarea {
   flex-shrink: 0
 }
 
-/* 编辑模式（时间轴） */
 .pl-wrap {
   position: relative;
   user-select: none;
@@ -474,7 +486,7 @@ textarea {
   flex: 1;
   border-top: 1px solid var(--line2);
   cursor: pointer;
-  touch-action: none;   /* 时间轴上滑动=选段；页面滚动走左侧时间刻度列或其他区域 */
+  touch-action: none;   
   border-radius: 4px;
   transition: background .1s
 }
@@ -640,7 +652,6 @@ textarea {
   background: var(--red)
 }
 
-/* 就地编辑器 */
 .blk-ed {
   position: absolute;
   left: 0;
@@ -785,7 +796,6 @@ textarea {
 .blk-ed.sorting .be-line { cursor: grabbing }
 .be-line:has(.be-i.sorting) { background: var(--bt); border-radius: 6px; opacity: .75 }
 
-/* ---------- 日历 ---------- */
 .a-cal {
   grid-area: calendar;
   padding: 18px 16px
@@ -931,15 +941,8 @@ textarea {
   background: var(--hov)
 }
 
-/* ---------- 常用笔记 ---------- */
 .a-nt {
   grid-area: notes
-}
-
-.nt-sum {
-  display: flex;
-  align-items: center;
-  gap: 8px
 }
 
 .c-num {
@@ -1048,7 +1051,6 @@ textarea {
   height: 14px
 }
 
-/* 阅读态正文 */
 .nt-body {
   max-height: 340px;
   overflow: auto;
@@ -1129,7 +1131,6 @@ textarea {
   margin: 0
 }
 
-/* 编辑态 */
 .nt-editor {
   padding: 4px 0 12px
 }
@@ -1212,7 +1213,6 @@ textarea {
 }
 
 .nt-area {
-  position: relative;
   min-height: 150px;
   max-height: 380px;
   overflow: auto;
@@ -1222,16 +1222,6 @@ textarea {
   user-select: text;
   -webkit-user-select: text;
   overflow-wrap: break-word
-}
-
-.nt-area:has(> p:only-child > br:only-child)::before,
-.nt-area:has(> div:only-child > br:only-child)::before {
-  content: '开始记录…';
-  position: absolute;
-  left: 2px;
-  top: 10px;
-  color: var(--t3);
-  pointer-events: none
 }
 
 .nt-body,
@@ -1275,7 +1265,6 @@ textarea {
   line-height: 1.9
 }
 
-/* ---------- 月度统计 ---------- */
 .a-st {
   grid-area: stats
 }
@@ -1326,7 +1315,6 @@ textarea {
   font-weight: 700
 }
 
-/* 类型汇总视图的日期分组标题 */
 .tv-date {
   font-size: 12px;
   font-weight: 700;
@@ -1393,7 +1381,6 @@ textarea {
   transform: translate(-50%, 0)
 }
 
-/* SweetAlert2 与应用风格对齐 */
 .swal2-popup {
   border-radius: 16px !important;
   font-family: inherit !important
@@ -1430,7 +1417,7 @@ textarea {
     padding: 15px
   }
 
-  /* 窄屏编辑模式：日期与「时间范围 + 完成」放不下一行时自动换行，避免重叠 */
+  
   .a-pl .c-tit {
     flex-wrap: wrap
   }

@@ -8,8 +8,6 @@ import { respondError } from '../lib/utils.js';
 /** @type {import('hono').Hono<AppBindings>} */
 const router = new Hono();
 
-// In-memory rate limiting is acceptable here because the app is personal and
-// isolate recycling only weakens brute-force protection temporarily.
 const loginLimits = new Map();
 
 function getLimit(ip) {
@@ -34,7 +32,6 @@ function recordFail(ip, now) {
   return record.lockedUntil;
 }
 
-// Constant-time comparison via SHA-256 fixed-length digests.
 async function timingSafeEqual(a, b) {
   const encoder = new TextEncoder();
   const [hashA, hashB] = await Promise.all([
@@ -97,8 +94,6 @@ router.post('/', async (c) => {
 
     const token = await signToken(c.env.JWT_SECRET, nonce);
 
-    // Warm the schema in the background so the first data request after login
-    // does not pay the initialization cost.
     c.executionCtx.waitUntil(
       Promise.resolve(ensureSchema(c.env)).catch(err => console.error('ensureSchema error after login:', err))
     );

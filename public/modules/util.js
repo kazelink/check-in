@@ -1,4 +1,4 @@
-/** 按 id 取元素；调用点都会保证元素存在，直接用 any 省去大量断言 */
+
 /** @type {(id: string) => any} */
 export const $ = (id) => document.getElementById(id);
 
@@ -35,7 +35,6 @@ export const fmtH = (min) => (min / 60).toFixed(1).replace(/\.0$/, '') + ' 小�
 
 export const genId = (pre) => pre + Date.now().toString(36) + Math.floor(Math.random() * 1e3);
 
-// 触屏/手写笔设备：用来避免拖动排序结束后自动聚焦弹出软键盘
 export const isCoarsePointer = () =>
   window.matchMedia?.('(hover: none), (pointer: coarse)').matches;
 
