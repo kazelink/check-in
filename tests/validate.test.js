@@ -21,6 +21,15 @@ test('日期键必须是 YYYY-MM-DD', () => {
   assert.equal(isDateKey('today'), false);
 });
 
+test('日期键拒绝不存在的日历日', () => {
+  assert.equal(isDateKey('2026-13-01'), false);
+  assert.equal(isDateKey('2026-00-10'), false);
+  assert.equal(isDateKey('2026-02-30'), false);
+  assert.equal(isDateKey('2026-04-31'), false);
+  assert.equal(isDateKey('2024-02-29'), true);
+  assert.equal(isDateKey('2026-12-31'), true);
+});
+
 test('文本按上限截断，非字符串退化为空串', () => {
   assert.equal(toText('abcdef', 3), 'abc');
   assert.equal(toText(null, 10), '');

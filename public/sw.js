@@ -28,7 +28,9 @@ const SHELL = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(SHELL_CACHE)
-      .then((cache) => cache.addAll(SHELL))
+      .then((cache) => Promise.all(
+        SHELL.map((url) => cache.add(url).catch(() => console.warn('precache skipped:', url)))
+      ))
       .then(() => self.skipWaiting())
   );
 });
@@ -56,11 +58,13 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const copy = response.clone();
-          caches.open(SHELL_CACHE).then((cache) => cache.put('/app.html', copy));
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(SHELL_CACHE).then((cache) => cache.put('/app.html', copy));
+          }
           return response;
         })
-        .catch(() => caches.match('/app.html'))
+        .catch(() => caches.match('/app.html').then((cached) => cached || Response.error()))
     );
     return;
   }

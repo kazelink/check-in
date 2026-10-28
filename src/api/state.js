@@ -17,8 +17,11 @@ const DEFAULT_META = { range: { s: 7, e: 23 }, lastT: 'w' };
 async function archiveCorrupt(env, scope, raw) {
   try {
     await env.DB
-      .prepare('INSERT INTO corrupt_rows (scope, raw, created_at) VALUES (?, ?, ?)')
-      .bind(scope, String(raw).slice(0, 200 * 1024), new Date().toISOString())
+      .prepare(`
+        INSERT INTO corrupt_rows (scope, raw, created_at)
+        SELECT ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM corrupt_rows WHERE scope = ?)
+      `)
+      .bind(scope, String(raw).slice(0, 200 * 1024), new Date().toISOString(), scope)
       .run();
   } catch (error) {
     console.error('archive corrupt row failed:', scope, error);

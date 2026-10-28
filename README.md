@@ -1,4 +1,4 @@
-# CheckIn
+# Check_In
 
 个人日程与笔记应用。日程时间轴、日历、常用笔记、月度统计；单密码登录，数据存 Cloudflare D1，多端增量同步，断网可继续编辑。
 
@@ -37,6 +37,8 @@ npm run deploy
 ```
 
 GitHub 连接部署：Deploy command 填 `npm run deploy`，构建变量加 `APP_PASSWORD`、`JWT_SECRET`。脚本会自动创建或复用 `checkin-db` 并注入 `database_id`。
+
+上线后访问 `/api/health`（需登录）确认数据库状态：返回 `{"ok":true,"db":true,"tables":[...]}` 表示正常；`D1 binding missing` 说明 Worker 没有绑定数据库。
 
 ## 备份
 

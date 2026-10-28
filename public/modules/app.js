@@ -3,7 +3,7 @@ import { S, R } from './ctx.js';
 import { toast } from './ui.js';
 import { mountIcons } from './icons.js';
 import { hasSession, initLogin, showLogin, onSessionExpired } from './auth.js';
-import { loadLocal, adoptRemote, save, flush, refresh } from './store.js';
+import { loadLocal, adoptRemote, flush, refresh } from './store.js';
 import * as notes from './notes.js';
 import * as planner from './planner.js';
 import * as calendar from './calendar.js';
@@ -75,6 +75,8 @@ function startApp() {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') flush();
   });
+
+  window.addEventListener('online', () => { flush(); });
 }
 
 onSessionExpired(() => showLogin('登录已过期，请重新输入密码'));
@@ -85,15 +87,31 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+function reportLoadError(error) {
+  console.error('[state]', error);
+  if (!navigator.onLine) {
+    toast('离线模式：数据暂存本地，恢复网络后自动同步');
+    return;
+  }
+  const status = Number(error?.status) || 0;
+  toast(status ? `数据加载失败（HTTP ${status}）` : '数据加载失败，已使用本地缓存');
+}
+
 initLogin(async () => {
   if (started) {
-    save();
-    await flush();
+    try {
+      await adoptRemote();
+      R.notes(); R.cal(); R.plan();
+    } catch (e) {
+      reportLoadError(e);
+    }
     return;
   }
   try {
     await adoptRemote();
-  } catch { }
+  } catch (e) {
+    reportLoadError(e);
+  }
   startApp();
 });
 
@@ -110,7 +128,7 @@ initLogin(async () => {
       showLogin();
     } else {
       startApp();
-      toast('离线模式：数据暂存本地，恢复网络后自动同步');
+      reportLoadError(e);
     }
   }
 })();

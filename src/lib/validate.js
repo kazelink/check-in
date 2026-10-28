@@ -8,10 +8,19 @@ export const LIMITS = {
 };
 
 const NOTE_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 export const isNoteId = (v) => typeof v === 'string' && NOTE_ID_RE.test(v);
-export const isDateKey = (v) => typeof v === 'string' && DATE_RE.test(v);
+
+export function isDateKey(v) {
+  if (typeof v !== 'string') return false;
+  const m = DATE_RE.exec(v);
+  if (!m) return false;
+  const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) return false;
+  const dt = new Date(Date.UTC(y, mo - 1, d));
+  return dt.getUTCFullYear() === y && dt.getUTCMonth() === mo - 1 && dt.getUTCDate() === d;
+}
 export const isPlainObject = (v) => Boolean(v) && typeof v === 'object' && !Array.isArray(v);
 
 export function toText(value, max) {

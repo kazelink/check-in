@@ -9,6 +9,19 @@ import { respondError } from '../lib/utils.js';
 const router = new Hono();
 
 const loginLimits = new Map();
+const LIMIT_MAX_ENTRIES = 500;
+
+function pruneLimits(now) {
+  if (loginLimits.size <= LIMIT_MAX_ENTRIES) return;
+  for (const [ip, record] of loginLimits) {
+    if (now - record.lastFailAt > CONFIG.LOGIN.LOCK_MS) loginLimits.delete(ip);
+  }
+  while (loginLimits.size > LIMIT_MAX_ENTRIES) {
+    const oldest = loginLimits.keys().next();
+    if (oldest.done) break;
+    loginLimits.delete(oldest.value);
+  }
+}
 
 function getLimit(ip) {
   const record = loginLimits.get(ip);
@@ -29,6 +42,7 @@ function recordFail(ip, now) {
     record.lockedUntil = now + CONFIG.LOGIN.LOCK_MS;
   }
   loginLimits.set(ip, record);
+  pruneLimits(now);
   return record.lockedUntil;
 }
 

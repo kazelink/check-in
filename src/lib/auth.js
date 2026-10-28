@@ -27,7 +27,7 @@ export async function authMiddleware(c, next, options = {}) {
   await next();
 
   if (shouldRefreshToken(payload)) {
-    const refreshedToken = await signToken(secret, nonce);
+    const refreshedToken = await signToken(secret, nonce || payload.nonce);
     setAuthCookie(c, refreshedToken);
     c.header('X-Auth-Token', refreshedToken);
   }

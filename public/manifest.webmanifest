@@ -1,6 +1,6 @@
 {
-  "name": "CheckIn",
-  "short_name": "CheckIn",
+  "name": "Check_In",
+  "short_name": "Check_In",
   "description": "日程时间轴、日历、常用笔记",
   "start_url": "/app.html",
   "scope": "/",
