@@ -7,7 +7,8 @@ const TABLES = [
     updated_at INTEGER NOT NULL,
     created_at INTEGER NOT NULL DEFAULT 0,
     rev INTEGER NOT NULL DEFAULT 1,
-    deleted_at INTEGER
+    deleted_at INTEGER,
+    pos INTEGER NOT NULL DEFAULT 0
   )`,
   `CREATE TABLE IF NOT EXISTS plans (
     date TEXT PRIMARY KEY,
@@ -27,7 +28,8 @@ const TABLES = [
     created_at TEXT NOT NULL
   )`,
   `CREATE INDEX IF NOT EXISTS idx_notes_updated ON notes (updated_at)`,
-  `CREATE INDEX IF NOT EXISTS idx_notes_deleted ON notes (deleted_at)`
+  `CREATE INDEX IF NOT EXISTS idx_notes_deleted ON notes (deleted_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_notes_pos ON notes (pos)`
 ];
 
 const COLUMNS = {
@@ -37,7 +39,8 @@ const COLUMNS = {
     ['updated_at', 'INTEGER NOT NULL DEFAULT 0'],
     ['created_at', 'INTEGER NOT NULL DEFAULT 0'],
     ['rev', 'INTEGER NOT NULL DEFAULT 1'],
-    ['deleted_at', 'INTEGER']
+    ['deleted_at', 'INTEGER'],
+    ['pos', 'INTEGER NOT NULL DEFAULT 0']
   ],
   plans: [
     ['payload', "TEXT NOT NULL DEFAULT '[]'"],

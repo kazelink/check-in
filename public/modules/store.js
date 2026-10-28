@@ -78,25 +78,27 @@ let flushAgain = false;
 let failureNotified = false;
 let timer = null;
 
-/** @typedef {{ notes: Record<string, 1>, plans: Record<string, 1>, meta: boolean }} Dirty */
+/** @typedef {{ notes: Record<string, 1>, plans: Record<string, 1>, meta: boolean, order: boolean }} Dirty */
 
 /** @returns {Dirty} */
 function loadDirty() {
   try {
     const d = JSON.parse(localStorage.getItem(DIRTY_KEY) || 'null');
-    if (!d || typeof d !== 'object') return { notes: {}, plans: {}, meta: false };
+    if (!d || typeof d !== 'object') return { notes: {}, plans: {}, meta: false, order: false };
     return {
       notes: d.notes && typeof d.notes === 'object' ? d.notes : {},
       plans: d.plans && typeof d.plans === 'object' ? d.plans : {},
-      meta: Boolean(d.meta)
+      meta: Boolean(d.meta),
+      order: Boolean(d.order)
     };
   } catch {
-    return { notes: {}, plans: {}, meta: false };
+    return { notes: {}, plans: {}, meta: false, order: false };
   }
 }
 
 let dirty = loadDirty();
-let dirtyCount = Object.keys(dirty.notes).length + Object.keys(dirty.plans).length + (dirty.meta ? 1 : 0);
+let dirtyCount = Object.keys(dirty.notes).length + Object.keys(dirty.plans).length
+  + (dirty.meta ? 1 : 0) + (dirty.order ? 1 : 0);
 
 function saveDirty() {
   try {
@@ -139,6 +141,12 @@ function diffOps() {
     if (!alive.has(id)) ops.push({ kind: 'noteDelete', id, rev: rec.rev });
   }
 
+  const keptNow = notes.filter((n) => baseNotes.has(n.id)).map((n) => n.id);
+  const keptBase = [...baseNotes.keys()].filter((id) => alive.has(id));
+  if (keptNow.join('\u0001') !== keptBase.join('\u0001')) {
+    ops.push({ kind: 'order', ids: notes.map((n) => n.id) });
+  }
+
   for (const [date, items] of Object.entries(S.data.plans || {})) {
     const rec = basePlans.get(date);
     const sig = planSig(items);
@@ -162,13 +170,16 @@ function refreshDirty() {
   /** @type {Record<string, 1>} */
   const plans = {};
   let meta = false;
+  let order = false;
   for (const op of diffOps()) {
     if (op.kind === 'note' || op.kind === 'noteDelete') notes[op.id] = 1;
     else if (op.kind === 'plan' || op.kind === 'planDelete') plans[op.date] = 1;
+    else if (op.kind === 'order') order = true;
     else meta = true;
   }
-  dirty = { notes, plans, meta };
-  dirtyCount = Object.keys(notes).length + Object.keys(plans).length + (meta ? 1 : 0);
+  dirty = { notes, plans, meta, order };
+  dirtyCount = Object.keys(notes).length + Object.keys(plans).length
+    + (meta ? 1 : 0) + (order ? 1 : 0);
   saveDirty();
 }
 
@@ -221,6 +232,21 @@ async function sendOp(op) {
     case 'planDelete': {
       await authedFetch(`/api/state/plans/${op.date}`, { method: 'DELETE' });
       basePlans.delete(op.date);
+      return;
+    }
+    case 'order': {
+      await authedFetch('/api/state/notes-order', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: op.ids })
+      });
+      const ordered = new Map();
+      for (const id of op.ids) {
+        const rec = baseNotes.get(id);
+        if (rec) ordered.set(id, rec);
+      }
+      for (const [id, rec] of baseNotes) if (!ordered.has(id)) ordered.set(id, rec);
+      baseNotes = ordered;
       return;
     }
     case 'meta': {
@@ -308,7 +334,7 @@ function applyRemote(remote) {
   S.data = normalize(remote.state);
   saveLocal();
   resetBase(S.data, remote.revs);
-  dirty = { notes: {}, plans: {}, meta: false };
+  dirty = { notes: {}, plans: {}, meta: false, order: false };
   dirtyCount = 0;
   saveDirty();
 }
@@ -328,6 +354,11 @@ function mergeRemote(remote) {
   const seen = new Set(notes.map((n) => n.id));
   for (const [id, localNote] of localNotes) {
     if (id in dirtyNotes && !seen.has(id)) notes.unshift(localNote);
+  }
+
+  if (dirty.order) {
+    const localOrder = new Map(local.notes.map((n, i) => [n.id, i]));
+    notes.sort((a, b) => (localOrder.get(a.id) ?? 1e9) - (localOrder.get(b.id) ?? 1e9));
   }
 
   /** @type {Record<string, PlanBlock[]>} */

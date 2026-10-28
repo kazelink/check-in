@@ -11,7 +11,7 @@ const router = new Hono();
 router.use('*', (c, next) => authMiddleware(c, next, { allowCookieOnly: true }));
 
 const SELECT_ALL = [
-  'SELECT id, title, html, updated_at, created_at, rev, deleted_at FROM notes ORDER BY created_at',
+  'SELECT id, title, html, updated_at, created_at, rev, deleted_at, pos FROM notes ORDER BY pos, created_at',
   'SELECT date, payload FROM plans ORDER BY date',
   'SELECT key, value FROM app_meta'
 ];
@@ -31,6 +31,7 @@ router.get('/', async (c) => {
       u: row.updated_at,
       createdAt: row.created_at || null,
       rev: row.rev,
+      pos: row.pos || 0,
       deletedAt: row.deleted_at || null
     }));
 
@@ -91,15 +92,16 @@ router.post('/restore', async (c) => {
     if (!isNoteId(note?.id)) continue;
     statements.push(
       c.env.DB.prepare(`
-        INSERT INTO notes (id, title, html, updated_at, created_at, rev, deleted_at)
-        VALUES (?, ?, ?, ?, ?, 1, ?)
+        INSERT INTO notes (id, title, html, updated_at, created_at, rev, deleted_at, pos)
+        VALUES (?, ?, ?, ?, ?, 1, ?, ?)
       `).bind(
         note.id,
         toText(note.t, LIMITS.noteTitle),
         toText(note.h, LIMITS.noteHtml),
         toTimestamp(note.u),
         toTimestamp(note.createdAt || note.u),
-        Number(note.deletedAt) || null
+        Number(note.deletedAt) || null,
+        Number(note.pos) || 0
       )
     );
   }

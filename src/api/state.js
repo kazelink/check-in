@@ -54,7 +54,7 @@ async function readState(env) {
   const [notesRes, plansRes, metaRes] = await env.DB.batch([
     env.DB.prepare(`
       SELECT id, title, html, updated_at, rev FROM notes
-      WHERE deleted_at IS NULL ORDER BY created_at DESC, id DESC
+      WHERE deleted_at IS NULL ORDER BY pos ASC, created_at DESC, id DESC
     `),
     env.DB.prepare('SELECT date, payload, rev FROM plans ORDER BY date'),
     env.DB.prepare('SELECT key, value FROM app_meta')
@@ -131,8 +131,8 @@ router.put('/notes/:id', async (c) => {
   const nextRev = rev + 1;
   await c.env.DB
     .prepare(`
-      INSERT INTO notes (id, title, html, updated_at, created_at, rev, deleted_at)
-      VALUES (?, ?, ?, ?, ?, ?, NULL)
+      INSERT INTO notes (id, title, html, updated_at, created_at, rev, deleted_at, pos)
+      VALUES (?, ?, ?, ?, ?, ?, NULL, (SELECT COALESCE(MIN(pos), 0) - 1 FROM notes))
       ON CONFLICT(id) DO UPDATE SET
         title = excluded.title,
         html = excluded.html,
@@ -144,6 +144,22 @@ router.put('/notes/:id', async (c) => {
     .run();
 
   return c.json({ rev: nextRev, u: updatedAt });
+});
+
+router.put('/notes-order', async (c) => {
+  const body = await c.req.json().catch(() => null);
+  if (!isPlainObject(body) || !Array.isArray(body.ids)) {
+    return respondError(c, 'Invalid Order', 400);
+  }
+
+  const ids = [...new Set(body.ids.filter(isNoteId))].slice(0, 500);
+  if (!ids.length) return c.json({ success: true, count: 0 });
+
+  await c.env.DB.batch(
+    ids.map((id, index) => c.env.DB.prepare('UPDATE notes SET pos = ? WHERE id = ?').bind(index, id))
+  );
+
+  return c.json({ success: true, count: ids.length });
 });
 
 router.delete('/notes/:id', async (c) => {

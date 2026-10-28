@@ -963,7 +963,55 @@ textarea {
 }
 
 .nt-item {
-  border-bottom: 1px solid var(--line2)
+  border-bottom: 1px solid var(--line2);
+  transition: transform .15s ease
+}
+
+.nt-item.nt-dragging {
+  position: relative;
+  z-index: 3;
+  background: var(--card);
+  border-radius: 6px;
+  border-bottom-color: transparent;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .14);
+  transition: none
+}
+
+.nt-grip {
+  width: 14px;
+  height: 24px;
+  margin: 0 -2px 0 -6px;
+  padding: 0;
+  border: 0;
+  background: 0 0;
+  color: var(--t3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: grab;
+  opacity: 0;
+  transition: opacity .15s, color .15s;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none
+}
+
+.nt-grip .ic {
+  width: 12px;
+  height: 12px
+}
+
+.nt-grip:hover {
+  color: var(--t1)
+}
+
+.nt-grip:active {
+  cursor: grabbing
+}
+
+.nt-item:hover .nt-grip {
+  opacity: 1
 }
 
 .nt-item:last-child {
@@ -1480,5 +1528,9 @@ textarea {
 @media (hover:none) {
   .pl-bx {
     opacity: .82
+  }
+
+  .nt-grip {
+    opacity: .5
   }
 }

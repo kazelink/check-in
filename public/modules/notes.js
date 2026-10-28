@@ -8,6 +8,9 @@ import { sanitize, titleOf, timeText } from './note-format.js';
 import * as editor from './note-editor.js';
 
 let leaveBusy = false;
+let drag = null;
+let dragSuppressUntil = 0;
+const GRIP = `<button type="button" class="nt-grip" data-grip aria-label="拖动排序">${icon('drag')}</button>`;
 
 const noteById = (id) => (S.data.notes || []).find((n) => n.id === id);
 
@@ -30,6 +33,7 @@ function itemHtml(n) {
       <span class="nt-acts">${acts}</span>
     </div>`
     : `<div class="nt-hd">
+      ${S.ntEdit ? '' : GRIP}
       <span class="nt-t">${esc(titleOf(n))}</span>
       <span class="nt-d">${esc(timeText(n.u))}</span>
       <span class="nt-acts">${acts}</span>
@@ -47,7 +51,7 @@ function itemHtml(n) {
 
 export function render() {
   const box = $('ntList');
-  if (!box) return;
+  if (!box || drag) return;
 
   const list = S.data.notes || [];
   if (S.ntEdit && editor.isActive() && editor.isDirty(editItem())) return;
@@ -184,10 +188,129 @@ async function removeNote(id) {
   toast('已删除');
 }
 
+function startDrag(e) {
+  if (S.ntEdit) return;
+  const grip = e.target.closest('[data-grip]');
+  if (!grip) return;
+  const list = $('ntList');
+  const item = grip.closest('.nt-item');
+  if (!list || !item) return;
+
+  const items = [...list.querySelectorAll('.nt-item')];
+  const index = items.indexOf(item);
+  if (index < 0) return;
+
+  e.preventDefault();
+  drag = {
+    pointerId: e.pointerId,
+    item,
+    items,
+    index,
+    target: index,
+    startY: e.clientY,
+    lastY: e.clientY,
+    height: item.getBoundingClientRect().height,
+    shift: items.map(() => 0),
+    raf: 0,
+    moved: false
+  };
+  item.classList.add('nt-dragging');
+  dragSuppressUntil = Date.now() + 400;
+}
+
+function applyDrag(clientY) {
+  if (!drag) return;
+  const dy = clientY - drag.startY;
+  drag.item.style.transform = `translateY(${dy}px)`;
+
+  const rects = drag.items.map((el, i) => {
+    const r = el.getBoundingClientRect();
+    const applied = i === drag.index ? dy : drag.shift[i];
+    return { top: r.top - applied, height: r.height };
+  });
+
+  const center = rects[drag.index].top + rects[drag.index].height / 2 + dy;
+  let target = 0;
+  for (let i = 0; i < rects.length; i++) {
+    if (i === drag.index) continue;
+    if (rects[i].top + rects[i].height / 2 < center) target += 1;
+  }
+  drag.target = target;
+
+  for (let i = 0; i < drag.items.length; i++) {
+    if (i === drag.index) continue;
+    let shift = 0;
+    if (i > drag.index && i <= target) shift = -drag.height;
+    else if (i < drag.index && i >= target) shift = drag.height;
+    drag.shift[i] = shift;
+    drag.items[i].style.transform = shift ? `translateY(${shift}px)` : '';
+  }
+}
+
+function autoScroll() {
+  if (!drag) return;
+  drag.raf = 0;
+  const edge = 64;
+  const vh = window.innerHeight;
+  let step = 0;
+  if (drag.lastY < edge) step = -Math.ceil((edge - drag.lastY) / 5);
+  else if (drag.lastY > vh - edge) step = Math.ceil((drag.lastY - (vh - edge)) / 5);
+  if (!step) return;
+
+  const before = window.scrollY;
+  window.scrollBy(0, step);
+  if (window.scrollY !== before) applyDrag(drag.lastY);
+  drag.raf = requestAnimationFrame(autoScroll);
+}
+
+function moveDrag(e) {
+  if (!drag || e.pointerId !== drag.pointerId) return;
+  const dy = e.clientY - drag.startY;
+  if (!drag.moved) {
+    if (Math.abs(dy) < 4) return;
+    drag.moved = true;
+  }
+  e.preventDefault();
+  drag.lastY = e.clientY;
+  applyDrag(e.clientY);
+  if (!drag.raf) drag.raf = requestAnimationFrame(autoScroll);
+}
+
+function endDrag(e) {
+  if (!drag || (e && e.pointerId !== drag.pointerId)) return;
+  const done = drag;
+  drag = null;
+  dragSuppressUntil = Date.now() + 250;
+  if (done.raf) cancelAnimationFrame(done.raf);
+  done.items.forEach((el) => { el.style.transform = ''; });
+  done.item.classList.remove('nt-dragging');
+
+  if (!done.moved || done.target === done.index) return;
+
+  const id = done.item.dataset.nt;
+  const list = S.data.notes || [];
+  const from = list.findIndex((n) => n.id === id);
+  if (from < 0) return;
+
+  commit(() => {
+    const [moved] = list.splice(from, 1);
+    list.splice(Math.min(done.target, list.length), 0, moved);
+  }, render);
+}
+
 export function init() {
   $('ntAdd').onclick = () => { createNote(); };
 
+  $('ntList').addEventListener('pointerdown', startDrag);
+  document.addEventListener('pointermove', moveDrag, { passive: false });
+  document.addEventListener('pointerup', endDrag);
+  document.addEventListener('pointercancel', () => endDrag(null));
+
   $('ntList').onclick = async (e) => {
+    if (e.target.closest('[data-grip]') || Date.now() < dragSuppressUntil) {
+      e.preventDefault();
+      return;
+    }
     const item = e.target.closest('[data-nt]');
     if (!item) return;
     const id = item.dataset.nt;
