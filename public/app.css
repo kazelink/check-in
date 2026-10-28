@@ -973,9 +973,13 @@ textarea {
 }
 
 .nt-grip {
-  width: 14px;
+  position: absolute;
+  left: -17px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 13px;
   height: 24px;
-  margin: 0 -2px 0 -6px;
+  margin: 0;
   padding: 0;
   border: 0;
   background: 0 0;
@@ -990,6 +994,12 @@ textarea {
   touch-action: none;
   user-select: none;
   -webkit-user-select: none
+}
+
+.nt-grip::before {
+  content: "";
+  position: absolute;
+  inset: -8px 0 -8px -6px
 }
 
 .nt-grip .ic {
@@ -1014,17 +1024,19 @@ textarea {
 }
 
 .nt-hd {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 9px 2px;
+  padding: 9px 0;
   cursor: pointer
 }
 
 .nt-t {
   flex: 1;
   min-width: 0;
-  font-size: 14px;
+  font-size: 17px;
+  line-height: 1.35;
   font-weight: 600;
   color: var(--t1);
   overflow: hidden;
@@ -1094,7 +1106,7 @@ textarea {
 .nt-body {
   max-height: 340px;
   overflow: auto;
-  padding: 2px 2px 12px;
+  padding: 2px 0 12px;
   color: var(--t1);
   user-select: text;
   -webkit-user-select: text;
@@ -1183,14 +1195,14 @@ textarea {
 .nt-title {
   flex: 1;
   min-width: 0;
-  height: 26px;
+  height: 28px;
   padding: 0 2px;
   border: 0;
   border-bottom: 1px solid transparent;
   border-radius: 0;
   background: 0 0;
   color: var(--t1);
-  font-size: 14px;
+  font-size: 17px;
   font-weight: 600;
   outline: 0
 }
@@ -1493,6 +1505,11 @@ textarea {
 
   .nt-hd {
     gap: 6px
+  }
+
+  .nt-grip {
+    left: -14px;
+    width: 12px
   }
 
   .nt-btn {
