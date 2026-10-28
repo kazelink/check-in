@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { authMiddleware } from '../lib/auth.js';
 import { respondError } from '../lib/utils.js';
 import { metaStatements } from '../lib/meta.js';
+import { CONFIG } from '../lib/config.js';
 import { isNoteId, isDateKey, isPlainObject, toText, toTimestamp, normalizePlanBlock, normalizeMeta, LIMITS } from '../lib/validate.js';
 
 /** @type {import('hono').Hono<AppBindings>} */
@@ -20,15 +21,18 @@ router.get('/', async (c) => {
     SELECT_ALL.map((sql) => c.env.DB.prepare(sql))
   );
 
-  const notes = (notesRes.results || []).map((row) => ({
-    id: row.id,
-    t: row.title,
-    h: row.html,
-    u: row.updated_at,
-    createdAt: row.created_at || null,
-    rev: row.rev,
-    deletedAt: row.deleted_at || null
-  }));
+  const keepAfter = Date.now() - CONFIG.PURGE.KEEP_MS;
+  const notes = (notesRes.results || [])
+    .filter((row) => !row.deleted_at || row.deleted_at >= keepAfter)
+    .map((row) => ({
+      id: row.id,
+      t: row.title,
+      h: row.html,
+      u: row.updated_at,
+      createdAt: row.created_at || null,
+      rev: row.rev,
+      deletedAt: row.deleted_at || null
+    }));
 
   const plans = {};
   for (const row of plansRes.results || []) {

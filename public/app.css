@@ -126,6 +126,10 @@ textarea {
   color: var(--t1)
 }
 
+#syncBtn:hover {
+  background: 0 0
+}
+
 .icn.on { color: var(--acc); background: var(--acc-t) }
 
 .icn.spin {
@@ -138,10 +142,10 @@ textarea {
 
 .icn.spin::after {
   content: "";
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  border: 2px solid rgba(78, 110, 242, .25);
+  border: 1.5px solid var(--t3);
   border-top-color: var(--acc);
   animation: spin .7s linear infinite
 }

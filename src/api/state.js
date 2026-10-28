@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { authMiddleware } from '../lib/auth.js';
 import { respondError } from '../lib/utils.js';
 import { metaStatements } from '../lib/meta.js';
+import { CONFIG } from '../lib/config.js';
 import {
   isNoteId, isDateKey, isPlainObject, toText, toTimestamp,
   normalizePlanBlock, normalizeMeta, LIMITS
@@ -13,6 +14,27 @@ const router = new Hono();
 router.use('*', authMiddleware);
 
 const DEFAULT_META = { range: { s: 7, e: 23 }, lastT: 'w' };
+
+async function purgeExpiredNotes(env, lastPurgeAt) {
+  const now = Date.now();
+  if (now - (Number(lastPurgeAt) || 0) < CONFIG.PURGE.INTERVAL_MS) return;
+
+  try {
+    await env.DB.batch([
+      env.DB
+        .prepare('DELETE FROM notes WHERE deleted_at IS NOT NULL AND deleted_at < ?')
+        .bind(now - CONFIG.PURGE.KEEP_MS),
+      env.DB
+        .prepare(`
+          INSERT INTO app_meta (key, value, updated_at) VALUES ('purgedAt', ?, ?)
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+        `)
+        .bind(JSON.stringify(now), now)
+    ]);
+  } catch (error) {
+    console.error('purge deleted notes failed:', error);
+  }
+}
 
 async function archiveCorrupt(env, scope, raw) {
   try {
@@ -62,6 +84,7 @@ async function readState(env) {
     }
   }
 
+  /** @type {Record<string, any>} */
   const meta = { ...DEFAULT_META };
   for (const row of metaRes.results || []) {
     try {
@@ -73,11 +96,16 @@ async function readState(env) {
 
   return {
     state: { notes, plans, range: meta.range, lastT: meta.lastT },
-    revs: { notes: noteRevs, plans: planRevs }
+    revs: { notes: noteRevs, plans: planRevs },
+    purgedAt: Number(meta.purgedAt) || 0
   };
 }
 
-router.get('/', async (c) => c.json(await readState(c.env)));
+router.get('/', async (c) => {
+  const { purgedAt, ...payload } = await readState(c.env);
+  c.executionCtx.waitUntil(purgeExpiredNotes(c.env, purgedAt));
+  return c.json(payload);
+});
 
 router.put('/notes/:id', async (c) => {
   const id = c.req.param('id');

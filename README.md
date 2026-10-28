@@ -44,6 +44,8 @@ GitHub 连接部署：Deploy command 填 `npm run deploy`，构建变量加 `APP
 
 登录后访问 `/api/backup` 下载 JSON；`POST /api/backup/restore` 整库恢复，请求体需带 `"confirm":"replace"`。
 
+删除的笔记先软删除并保留 7 天（备份里带 `deletedAt`，期间可恢复），超过 7 天由 `/api/state` 在下次访问时物理清除。
+
 ## 目录
 
 ```

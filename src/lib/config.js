@@ -4,5 +4,9 @@ export const CONFIG = {
   LOGIN: {
     MAX_ATTEMPTS: 5,
     LOCK_MS: 15 * 60 * 1000
+  },
+  PURGE: {
+    KEEP_MS: 7 * 86400000,
+    INTERVAL_MS: 86400000
   }
 };
