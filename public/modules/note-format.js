@@ -47,18 +47,3 @@ export function titleOf(note) {
   return text ? (text.length > 24 ? text.slice(0, 24) + '…' : text) : '未命名笔记';
 }
 
-export function timeText(ts) {
-  if (!ts) return '';
-  const d = new Date(ts);
-  if (Number.isNaN(d.getTime())) return '';
-  const now = new Date();
-  const p2 = (x) => String(x).padStart(2, '0');
-  const hm = `${p2(d.getHours())}:${p2(d.getMinutes())}`;
-  const day0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const dayD = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const diff = Math.round((day0.getTime() - dayD.getTime()) / 86400000);
-  if (diff === 0) return `今天 ${hm}`;
-  if (diff === 1) return `昨天 ${hm}`;
-  if (d.getFullYear() === now.getFullYear()) return `${d.getMonth() + 1}月${d.getDate()}日`;
-  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
-}

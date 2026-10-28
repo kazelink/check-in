@@ -963,18 +963,13 @@ textarea {
 }
 
 .nt-item {
-  border-bottom: 1px solid var(--line2);
-  transition: transform .15s ease
+  border-bottom: 1px solid var(--line2)
 }
 
 .nt-item.nt-dragging {
-  position: relative;
-  z-index: 3;
-  background: var(--card);
+  background: var(--bt);
   border-radius: 6px;
-  border-bottom-color: transparent;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, .14);
-  transition: none
+  opacity: .75
 }
 
 .nt-grip {
@@ -1035,13 +1030,6 @@ textarea {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap
-}
-
-.nt-d {
-  flex-shrink: 0;
-  font-size: 12px;
-  color: var(--t3);
-  font-variant-numeric: tabular-nums
 }
 
 .nt-acts {
@@ -1513,10 +1501,6 @@ textarea {
 
   .nt-btn.icon {
     padding: 0
-  }
-
-  .nt-d {
-    font-size: 11px
   }
 
   .nt-tb-btn {

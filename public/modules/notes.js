@@ -4,7 +4,7 @@ import { S } from './ctx.js';
 import { commit } from './store.js';
 import { toast, swalConfirm, swalUnsaved } from './ui.js';
 import { icon } from './icons.js';
-import { sanitize, titleOf, timeText } from './note-format.js';
+import { sanitize, titleOf } from './note-format.js';
 import * as editor from './note-editor.js';
 
 let leaveBusy = false;
@@ -35,7 +35,6 @@ function itemHtml(n) {
     : `<div class="nt-hd">
       ${S.ntEdit ? '' : GRIP}
       <span class="nt-t">${esc(titleOf(n))}</span>
-      <span class="nt-d">${esc(timeText(n.u))}</span>
       <span class="nt-acts">${acts}</span>
     </div>`;
 
@@ -192,88 +191,24 @@ function startDrag(e) {
   if (S.ntEdit) return;
   const grip = e.target.closest('[data-grip]');
   if (!grip) return;
-  const list = $('ntList');
   const item = grip.closest('.nt-item');
-  if (!list || !item) return;
-
-  const items = [...list.querySelectorAll('.nt-item')];
-  const index = items.indexOf(item);
-  if (index < 0) return;
-
+  if (!item) return;
   e.preventDefault();
-  drag = {
-    pointerId: e.pointerId,
-    item,
-    items,
-    index,
-    target: index,
-    startY: e.clientY,
-    lastY: e.clientY,
-    height: item.getBoundingClientRect().height,
-    shift: items.map(() => 0),
-    raf: 0,
-    moved: false
-  };
+  drag = { item, pointerId: e.pointerId };
   item.classList.add('nt-dragging');
   dragSuppressUntil = Date.now() + 400;
 }
 
-function applyDrag(clientY) {
-  if (!drag) return;
-  const dy = clientY - drag.startY;
-  drag.item.style.transform = `translateY(${dy}px)`;
-
-  const rects = drag.items.map((el, i) => {
-    const r = el.getBoundingClientRect();
-    const applied = i === drag.index ? dy : drag.shift[i];
-    return { top: r.top - applied, height: r.height };
-  });
-
-  const center = rects[drag.index].top + rects[drag.index].height / 2 + dy;
-  let target = 0;
-  for (let i = 0; i < rects.length; i++) {
-    if (i === drag.index) continue;
-    if (rects[i].top + rects[i].height / 2 < center) target += 1;
-  }
-  drag.target = target;
-
-  for (let i = 0; i < drag.items.length; i++) {
-    if (i === drag.index) continue;
-    let shift = 0;
-    if (i > drag.index && i <= target) shift = -drag.height;
-    else if (i < drag.index && i >= target) shift = drag.height;
-    drag.shift[i] = shift;
-    drag.items[i].style.transform = shift ? `translateY(${shift}px)` : '';
-  }
-}
-
-function autoScroll() {
-  if (!drag) return;
-  drag.raf = 0;
-  const edge = 64;
-  const vh = window.innerHeight;
-  let step = 0;
-  if (drag.lastY < edge) step = -Math.ceil((edge - drag.lastY) / 5);
-  else if (drag.lastY > vh - edge) step = Math.ceil((drag.lastY - (vh - edge)) / 5);
-  if (!step) return;
-
-  const before = window.scrollY;
-  window.scrollBy(0, step);
-  if (window.scrollY !== before) applyDrag(drag.lastY);
-  drag.raf = requestAnimationFrame(autoScroll);
-}
-
 function moveDrag(e) {
-  if (!drag || e.pointerId !== drag.pointerId) return;
-  const dy = e.clientY - drag.startY;
-  if (!drag.moved) {
-    if (Math.abs(dy) < 4) return;
-    drag.moved = true;
-  }
+  if (!drag || drag.pointerId !== e.pointerId) return;
   e.preventDefault();
-  drag.lastY = e.clientY;
-  applyDrag(e.clientY);
-  if (!drag.raf) drag.raf = requestAnimationFrame(autoScroll);
+  const target = document.elementFromPoint(e.clientX, e.clientY)?.closest('.nt-item');
+  const row = drag.item;
+  if (!target || target === row || !target.closest('#ntList')) return;
+  const list = $('ntList');
+  const rows = [...list.querySelectorAll('.nt-item')];
+  const from = rows.indexOf(row), to = rows.indexOf(target);
+  list.insertBefore(row, from < to ? target.nextSibling : target);
 }
 
 function endDrag(e) {
@@ -281,20 +216,15 @@ function endDrag(e) {
   const done = drag;
   drag = null;
   dragSuppressUntil = Date.now() + 250;
-  if (done.raf) cancelAnimationFrame(done.raf);
-  done.items.forEach((el) => { el.style.transform = ''; });
   done.item.classList.remove('nt-dragging');
+  if (!done.item.isConnected) return;
 
-  if (!done.moved || done.target === done.index) return;
-
-  const id = done.item.dataset.nt;
+  const ids = [...$('ntList').querySelectorAll('.nt-item')].map((el) => el.dataset.nt);
   const list = S.data.notes || [];
-  const from = list.findIndex((n) => n.id === id);
-  if (from < 0) return;
+  if (ids.join() === list.map((n) => n.id).join()) return;
 
   commit(() => {
-    const [moved] = list.splice(from, 1);
-    list.splice(Math.min(done.target, list.length), 0, moved);
+    S.data.notes = ids.map((nid) => list.find((n) => n.id === nid)).filter(Boolean);
   }, render);
 }
 
