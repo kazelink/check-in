@@ -1051,6 +1051,16 @@ textarea {
   flex-shrink: 0
 }
 
+.nt-hd:not(.edit) .nt-acts {
+  opacity: 0;
+  transition: opacity .15s
+}
+
+.nt-item:hover .nt-hd:not(.edit) .nt-acts,
+.nt-hd:not(.edit) .nt-acts:focus-within {
+  opacity: 1
+}
+
 .nt-btn {
   height: 24px;
   padding: 0 8px;
@@ -1214,6 +1224,46 @@ textarea {
 
 .nt-title:focus {
   border-bottom-color: var(--acc)
+}
+
+.nt-color-wrap {
+  position: relative;
+  display: flex
+}
+
+.nt-colors {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 20px);
+  gap: 7px;
+  padding: 8px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 10px 24px rgba(16, 20, 30, .12);
+  z-index: 20
+}
+
+.nt-colors[hidden] {
+  display: none
+}
+
+.nt-color {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--c);
+  cursor: pointer;
+  transition: transform .12s;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .08)
+}
+
+.nt-color:hover {
+  transform: scale(1.14)
 }
 
 .nt-tb {
@@ -1533,5 +1583,9 @@ textarea {
 
   .nt-grip {
     opacity: .5
+  }
+
+  .nt-hd:not(.edit) .nt-acts {
+    opacity: .82
   }
 }

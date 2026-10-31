@@ -11,6 +11,13 @@ const DROP_TAGS = new Set([
 ]);
 
 const SAFE_HREF = /^(https?:|mailto:)/i;
+const SAFE_COLOR = /^(#[0-9a-f]{3,8}|rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(?:,\s*(?:0|1|0?\.\d+)\s*)?\))$/i;
+
+function safeStyle(styleText) {
+  const match = /(?:^|;)\s*color\s*:\s*([^;]+)/i.exec(String(styleText || ''));
+  const value = match ? match[1].trim() : '';
+  return SAFE_COLOR.test(value) ? `color:${value}` : '';
+}
 
 export function sanitize(html) {
   const src = String(html == null ? '' : html);
@@ -21,6 +28,12 @@ export function sanitize(html) {
     if (DROP_TAGS.has(el.tagName)) { el.remove(); return; }
     for (const attr of [...el.attributes]) {
       const name = attr.name.toLowerCase();
+      if (name === 'style') {
+        const kept = safeStyle(attr.value);
+        if (kept) el.setAttribute('style', kept);
+        else el.removeAttribute('style');
+        continue;
+      }
       const keepHref = name === 'href' && el.tagName === 'A' && SAFE_HREF.test(attr.value.trim());
       if (!keepHref) el.removeAttribute(attr.name);
     }

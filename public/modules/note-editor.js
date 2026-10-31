@@ -11,8 +11,7 @@ const TOOLBAR = [
   { cmd: 'underline', ic: 'underline', tip: '下划线' },
   { cmd: 'strike', ic: 'strike', tip: '删除线' },
   { sep: true },
-  { cmd: 'h1', ic: 'h1', tip: '大标题' },
-  { cmd: 'h2', ic: 'h2', tip: '小标题' },
+  { pick: 'color', tip: '文字颜色' },
   { sep: true },
   { cmd: 'quote', ic: 'quote', tip: '引用' },
   { cmd: 'ul', ic: 'ul', tip: '无序列表' },
@@ -22,6 +21,31 @@ const TOOLBAR = [
   { cmd: 'redo', ic: 'redo', tip: '重做' },
   { cmd: 'clear', ic: 'clear', tip: '清除格式' }
 ];
+
+let closeHandler = null;
+
+function closeColors(host) {
+  host?.querySelector('.nt-colors')?.setAttribute('hidden', '');
+}
+
+function toggleColors(host) {
+  const pop = host.querySelector('.nt-colors');
+  if (!pop) return;
+  pop.hidden = !pop.hidden;
+}
+
+function bindClose(host) {
+  unbindClose();
+  closeHandler = (e) => {
+    if (!(/** @type {any} */ (e.target))?.closest?.('.nt-color-wrap')) closeColors(host);
+  };
+  document.addEventListener('mousedown', closeHandler);
+}
+
+function unbindClose() {
+  if (closeHandler) document.removeEventListener('mousedown', closeHandler);
+  closeHandler = null;
+}
 
 /** @type {any} */
 let sq = null;
@@ -37,11 +61,25 @@ function fragmentOf(html) {
   return tpl.content;
 }
 
+const TEXT_COLORS = ['#1b1d22', '#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#a855f7'];
+
+function colorPicker() {
+  const dots = TEXT_COLORS.map((c) => (
+    `<button type="button" class="nt-color" data-color="${c}" style="--c:${c}" aria-label="${c}" tabindex="-1"></button>`
+  )).join('');
+
+  return `<span class="nt-color-wrap">
+    <button type="button" class="nt-tb-btn" data-color-btn aria-label="文字颜色" tabindex="-1">${icon('fontColor')}</button>
+    <span class="nt-colors" hidden>${dots}</span>
+  </span>`;
+}
+
 function editorHtml() {
-  const btns = TOOLBAR.map((t) => t.sep
-    ? '<span class="nt-sep"></span>'
-    : `<button type="button" class="nt-tb-btn" data-cmd="${t.cmd}" aria-label="${t.tip}" tabindex="-1">${icon(t.ic)}</button>`
-  ).join('');
+  const btns = TOOLBAR.map((t) => {
+    if (t.sep) return '<span class="nt-sep"></span>';
+    if (t.pick === 'color') return colorPicker();
+    return `<button type="button" class="nt-tb-btn" data-cmd="${t.cmd}" aria-label="${t.tip}" tabindex="-1">${icon(t.ic)}</button>`;
+  }).join('');
 
   return `<div class="nt-tb">${btns}</div><div class="nt-area"></div>`;
 }
@@ -63,6 +101,7 @@ export function isDirty(item) {
 }
 
 export function reset() {
+  unbindClose();
   sq = null;
   hostEl = null;
   base = { t: '', h: '' };
@@ -87,11 +126,28 @@ export function mount(item, note, handlers) {
   base = { t: (title?.value || '').trim(), h: draftHtml() };
 
   host.querySelector('.nt-tb')?.addEventListener('mousedown', (e) => {
+    const colorBtn = e.target.closest('[data-color-btn]');
+    if (colorBtn) {
+      e.preventDefault();
+      toggleColors(host);
+      return;
+    }
+    const dot = e.target.closest('[data-color]');
+    if (dot) {
+      e.preventDefault();
+      ensureSelection();
+      sq.setTextColor(/** @type {HTMLElement} */ (dot).dataset.color);
+      closeColors(host);
+      syncToolbar();
+      return;
+    }
     const btn = e.target.closest('[data-cmd]');
     if (!btn) return;
     e.preventDefault();
     run(btn.dataset.cmd);
   });
+
+  bindClose(host);
 
   area.addEventListener('keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
